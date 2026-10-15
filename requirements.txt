@@ -1,0 +1,5 @@
+pypdf
+sentence-transformers
+chromadb
+pyyaml
+tqdm
