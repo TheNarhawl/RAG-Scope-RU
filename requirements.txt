@@ -3,3 +3,4 @@ sentence-transformers
 chromadb
 pyyaml
 tqdm
+python-dotenv

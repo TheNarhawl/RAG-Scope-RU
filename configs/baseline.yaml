@@ -1,0 +1,12 @@
+meta:
+  name: baseline
+  device: auto
+
+ingest:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  collection: baseline
+  chunk_size: 512
+  chunk_overlap: 64
+
+retrieve:
+  top_k: 3

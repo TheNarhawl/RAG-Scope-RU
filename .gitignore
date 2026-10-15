@@ -16,3 +16,5 @@ cache/
 *.safetensors
 
 .env
+
+scripts.txt
