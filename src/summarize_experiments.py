@@ -28,6 +28,8 @@ def load_runs() -> list[dict]:
             "hit@1": data["summary"]["hit_rate"]["@1"],
             "hit@3": data["summary"]["hit_rate"]["@3"],
             "hit@5": data["summary"]["hit_rate"]["@5"],
+            "hit@10": data["summary"]["hit_rate"].get("@10", None),
+            "ms_per_query": data["summary"].get("ms_per_query", None),
             "mrr": data["summary"]["mrr"],
         })
     return runs
@@ -56,7 +58,7 @@ def build_markdown(runs: list[dict]) -> str:
         lines.append("_Пока нет ни одного прогона._")
         return "\n".join(lines)
 
-    headers = ["#", "Tag", "Embedding", "Chunk", "Overlap", "N", "Hit@1", "Hit@3", "Hit@5", "MRR", "Timestamp"]
+    headers = ["#", "Tag", "Embedding", "Chunk", "Overlap", "N", "Hit@1", "Hit@3", "Hit@5", "Hit@10", "MRR", "ms/q", "Timestamp"]
     lines.append("| " + " | ".join(headers) + " |")
     lines.append("|" + "|".join(["---"] * len(headers)) + "|")
 

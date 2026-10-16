@@ -1,24 +1,20 @@
-from pathlib import Path
+import argparse
 import gc
-import os
+import sys
 import time
 import uuid
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import torch
 import yaml
-from dotenv import load_dotenv
 from pypdf import PdfReader
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
-import argparse
 
-ROOT = Path(__file__).resolve().parents[1]
-load_dotenv(ROOT / ".env")
-
-QDRANT_HOST = os.environ["QDRANT_HOST"]
-QDRANT_PORT = int(os.environ["QDRANT_PORT"])
-EMBED_BATCH_SIZE = int(os.environ["EMBED_BATCH_SIZE"])
+from paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL
 
 UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 
@@ -65,16 +61,18 @@ def main():
     parser.add_argument("--config", default="baseline")
     args = parser.parse_args()
 
-    cfg = yaml.safe_load((ROOT / "configs" / f"{args.config}.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
     ing = cfg["ingest"]
     collection_name = ing["collection"]
 
-    docs_dir = ROOT / "data" / "docs"
-    pdfs = sorted(docs_dir.glob("*.pdf"))
+    pdfs = sorted(DOCS_DIR.glob("*.pdf"))
     if not pdfs:
-        print(f"Нет PDF в {docs_dir}.")
+        print(f"Нет PDF в {DOCS_DIR}.")
         return
 
+    print(f"Конфиг: {args.config}")
+    print(f"Коллекция: {collection_name}")
+    print(f"Модель: {ing['embedding_model']}")
     print(f"Найдено PDF: {len(pdfs)}")
 
     device = pick_device()
@@ -83,7 +81,7 @@ def main():
     vector_size = model.get_embedding_dimension()
     print(f"Размерность вектора: {vector_size}")
 
-    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    client = QdrantClient(url=QDRANT_URL)
 
     try:
         client.delete_collection(collection_name)
@@ -97,6 +95,7 @@ def main():
     )
     print(f"Коллекция '{collection_name}' создана\n")
 
+    is_e5 = "e5" in ing["embedding_model"].lower()
     total_points = 0
     skipped = []
     t0 = time.time()
@@ -125,9 +124,9 @@ def main():
             continue
 
         texts = [p["text"] for p in points]
-        if "e5" in ing["embedding_model"].lower():
+        if is_e5:
             texts = ["passage: " + t for t in texts]
-            
+
         embeddings = model.encode(
             texts,
             batch_size=EMBED_BATCH_SIZE,

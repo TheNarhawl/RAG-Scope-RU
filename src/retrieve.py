@@ -1,17 +1,14 @@
 import argparse
-import os
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 import yaml
-from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-ROOT = Path(__file__).resolve().parents[1]
-load_dotenv(ROOT / ".env")
-
-QDRANT_HOST = os.environ["QDRANT_HOST"]
-QDRANT_PORT = int(os.environ["QDRANT_PORT"])
+from paths import CONFIGS_DIR, QDRANT_URL
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,25 +18,21 @@ def parse_args() -> argparse.Namespace:
         default="baseline",
         help="Имя конфига в configs/ без .yaml (по умолчанию baseline).",
     )
-    parser.add_argument(
-        "query",
-        nargs="*",
-        help="Текст запроса.",
-    )
+    parser.add_argument("query", nargs="*", help="Текст запроса.")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
 
-    cfg = yaml.safe_load((ROOT / "configs" / f"{args.config}.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
     ing = cfg["ingest"]
     top_k = cfg["retrieve"]["top_k"]
 
     query = " ".join(args.query) if args.query else "о чём этот документ?"
 
     model = SentenceTransformer(ing["embedding_model"])
-    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    client = QdrantClient(url=QDRANT_URL)
 
     query_text = query
     if "e5" in ing["embedding_model"].lower():

@@ -69,6 +69,39 @@ _Сгенерировано: 2026-10-17 01:46:03_
 | 1 | qdrant_minilm | all-MiniLM-L6-v2 | 512 | 64 | 200 | 0.130 | 0.225 | 0.305 | 0.188 | 20261017_000037 |
 | 2 | qdrant_e5_large | multilingual-e5-large | 512 | 64 | 200 | 0.730 | 0.860 | 0.895 | 0.794 | 20261017_014537 |
 
+## Запуск через Docker
+
+Для локального запуска и для переноса на удалённый сервер с GPU.
+
+### Требования
+
+- Docker Desktop (Windows/macOS) или Docker Engine + Docker Compose (Linux)
+- Для GPU: [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+
+### Локально
+
+```bash
+cd docker
+
+# 1. Собрать образ приложения
+docker compose build app
+
+# 2. Поднять Qdrant
+docker compose up -d qdrant
+
+# 3. Проиндексировать корпус
+docker compose run --rm app python src/ingest.py --config baseline
+
+# 4. Проверить поиск
+docker compose run --rm app python src/retrieve.py --config baseline "срок исковой давности"
+
+# 5. Оценить метрики
+docker compose run --rm app python src/evaluate_retrieval.py --config baseline --tag docker-minilm
+
+# 6. Остановить Qdrant
+docker compose down
+```
+
 
 ## Лицензия
 
