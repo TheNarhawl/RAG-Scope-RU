@@ -7,3 +7,5 @@ qdrant-client==1.19.1
 pypdf==6.20.1
 PyYAML==6.0.3
 python-dotenv==1.2.4
+pandas
+matplotlib
