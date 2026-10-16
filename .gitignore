@@ -1,20 +1,69 @@
+# ---------- Python ----------
 __pycache__/
 *.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---------- Виртуальные окружения ----------
 .venv/
 venv/
-.ipynb_checkpoints/
+env/
+ENV/
 
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# ---------- Данные (не коммитим) ----------
 data/docs/*
 !data/docs/.gitkeep
+
+# Построенный векторный индекс
 data/index/
+
+# Полный CSV из RRNCB
+data/eval/dataset_sample.csv
+data/eval/*.csv
+data/eval/questions.json
+
+# ---------- Эксперименты ----------
 experiments/*
 !experiments/.gitkeep
 
+# ---------- Модели и кэш HF ----------
 cache/
+models/
 *.pt
+*.pth
 *.bin
 *.safetensors
+*.onnx
+.ollama/
+huggingface/
 
+# ---------- Секреты ----------
 .env
+.env.*
+!.env.example
 
-scripts.txt
+# ---------- Логи ----------
+*.log
+logs/
+
+# ---------- ОС ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- IDE ----------
+.vscode/
+.idea/
+*.swp
+*~
+
+# ---------- Dump ----------
+project_dump.txt

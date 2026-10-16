@@ -9,4 +9,4 @@ ingest:
   chunk_overlap: 64
 
 retrieve:
-  top_k: 3
+  top_k: 5

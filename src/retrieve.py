@@ -1,14 +1,16 @@
-from pathlib import Path
 import sys
-import yaml
-import chromadb
-from sentence_transformers import SentenceTransformer
-import os
-from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+import yaml
+from dotenv import load_dotenv
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
 
 ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
+
+QDRANT_HOST = os.environ["QDRANT_HOST"]
+QDRANT_PORT = int(os.environ["QDRANT_PORT"])
 
 
 def main():
@@ -19,16 +21,22 @@ def main():
     query = " ".join(sys.argv[1:]) or "о чём этот документ?"
 
     model = SentenceTransformer(ing["embedding_model"])
-    client = chromadb.PersistentClient(path=str(ROOT / "data" / "index"))
-    col = client.get_collection(ing["collection"])
+    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
-    q_emb = model.encode([query]).tolist()
-    res = col.query(query_embeddings=q_emb, n_results=top_k)
+    q_emb = model.encode([query], normalize_embeddings=True)[0].tolist()
+
+    results = client.search(
+        collection_name=ing["collection"],
+        query_vector=q_emb,
+        limit=top_k,
+        with_payload=True,
+    )
 
     print(f"Запрос: {query}\n")
-    for doc, meta in zip(res["documents"][0], res["metadatas"][0]):
-        print(f"--- {meta['source']} #{meta['chunk_id']} ---")
-        print(doc[:400], "\n")
+    for hit in results:
+        payload = hit.payload
+        print(f"--- {payload['source']}, стр. {payload['page']} (chunk {payload['chunk_id']}) score={hit.score:.4f} ---")
+        print(payload['text'][:400], "\n")
 
 
 if __name__ == "__main__":

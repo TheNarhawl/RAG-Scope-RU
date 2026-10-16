@@ -1,0 +1,21 @@
+1) Окружение
+.\.venv\Scripts\Activate.ps1
+
+2) Очистка старых векторов
+Remove-Item -Recurse -Force data\index -ErrorAction SilentlyContinue
+
+3) Сборка индекса
+python src/ingest.py
+
+4) Проверка поиска вручную
+python src/retrieve.py "что такое логистический рост популяции?"
+python src/retrieve.py "как классифицируются состояния равновесия?"
+
+5) Посчитать метрики на вопросах
+python src/evaluate_retrieval.py
+
+6) Результат json
+Get-Content experiments\baseline\metrics.json
+
+7) Проверка, записались ли чанки
+python -c "import chromadb; c=chromadb.PersistentClient(path='data/index'); col=c.get_collection('baseline'); print('чанков:', col.count())"

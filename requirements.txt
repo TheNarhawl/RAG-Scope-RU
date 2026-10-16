@@ -1,6 +1,8 @@
 pypdf
 sentence-transformers
-chromadb
 pyyaml
 tqdm
 python-dotenv
+torch==2.14.1+cu126
+yaml
+qdrant-client
