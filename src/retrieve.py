@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -25,15 +26,15 @@ def main():
 
     q_emb = model.encode([query], normalize_embeddings=True)[0].tolist()
 
-    results = client.search(
+    results = client.query_points(
         collection_name=ing["collection"],
-        query_vector=q_emb,
+        query=q_emb,
         limit=top_k,
         with_payload=True,
     )
 
     print(f"Запрос: {query}\n")
-    for hit in results:
+    for hit in results.points:
         payload = hit.payload
         print(f"--- {payload['source']}, стр. {payload['page']} (chunk {payload['chunk_id']}) score={hit.score:.4f} ---")
         print(payload['text'][:400], "\n")

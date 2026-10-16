@@ -1,13 +1,15 @@
 from pathlib import Path
 import gc
+import os
 import time
+import uuid
 
 import torch
 import yaml
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +18,15 @@ load_dotenv(ROOT / ".env")
 QDRANT_HOST = os.environ["QDRANT_HOST"]
 QDRANT_PORT = int(os.environ["QDRANT_PORT"])
 EMBED_BATCH_SIZE = int(os.environ["EMBED_BATCH_SIZE"])
+
+UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
+
+
+def make_point_id(source: str, page: int, chunk_id: int) -> str:
+    """Детерминированный UUID5 из (файл, страница, чанк)."""
+    key = f"{source}|p{page}|c{chunk_id}"
+    return str(uuid.uuid5(UUID_NAMESPACE, key))
+
 
 def load_pdf_pages(path: Path) -> list[tuple[int, str]]:
     """Возвращает [(номер_страницы, текст), ...]"""
@@ -63,23 +74,23 @@ def main():
 
     device = pick_device()
     model = SentenceTransformer(ing["embedding_model"], device=device)
-    
-    # Получаем размерность вектора из модели
-    vector_size = model.get_sentence_embedding_dimension()
+
+    vector_size = model.get_embedding_dimension()
     print(f"Размерность вектора: {vector_size}")
 
-    # Подключаемся к Qdrant и создаём коллекцию
     client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
-    
-    # Удаляем старую коллекцию, если есть, чтобы начать с чистого листа
-    client.delete_collection(collection_name)  # Игнорируем ошибку, если коллекции нет
-    print(f"Коллекция '{collection_name}' удалена (если существовала)")
-    
+
+    try:
+        client.delete_collection(collection_name)
+        print(f"Коллекция '{collection_name}' удалена")
+    except Exception:
+        print(f"Коллекции '{collection_name}' не было")
+
     client.create_collection(
         collection_name=collection_name,
         vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
     )
-    print(f"Коллекция '{collection_name}' создана")
+    print(f"Коллекция '{collection_name}' создана\n")
 
     total_points = 0
     skipped = []
@@ -94,8 +105,7 @@ def main():
             for local_i, chunk in enumerate(
                 chunk_text(page_text, ing["chunk_size"], ing["chunk_overlap"])
             ):
-                # Формируем точку (PointStruct)
-                point_id = f"{pdf.stem}_p{page_num}_c{local_i}"
+                point_id = make_point_id(pdf.name, page_num, local_i)
                 points.append({
                     "id": point_id,
                     "text": chunk,
@@ -106,10 +116,9 @@ def main():
 
         if not points:
             skipped.append(pdf.name)
-            print(f"[{idx}/{len(pdfs)}] {pdf.name}: пусто (нет текстового слоя)")
+            print(f"[{idx}/{len(pdfs)}] {pdf.name}: пусто")
             continue
 
-        # Вычисляем эмбеддинги для всех чанков этого PDF
         texts = [p["text"] for p in points]
         embeddings = model.encode(
             texts,
@@ -119,7 +128,6 @@ def main():
             normalize_embeddings=True,
         )
 
-        # Формируем список PointStruct для Qdrant
         qdrant_points = [
             PointStruct(
                 id=points[i]["id"],
@@ -134,11 +142,10 @@ def main():
             for i in range(len(points))
         ]
 
-        # Загружаем точки через upload_points (сам управляет батчами)
         client.upload_points(
             collection_name=collection_name,
             points=qdrant_points,
-            batch_size=256,   # рекомендуемый размер для стабильности[reference:3]
+            batch_size=256,
             parallel=1,
             wait=True,
         )
@@ -152,18 +159,16 @@ def main():
 
     total_time = time.time() - t0
 
-    # Освобождаем VRAM
     del model
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-    # Информация о коллекции
     info = client.get_collection(collection_name)
     print("\n=== Итог ===")
     print(f"Точек в коллекции: {info.points_count}")
     print(f"Добавлено в этом прогоне: {total_points}")
-    print(f"Время: {total_time:.1f} сек ({total_time/60:.1f} мин)")
+    print(f"Время: {total_time:.1f} сек ({total_time / 60:.1f} мин)")
     if skipped:
         print(f"Пропущено (пусто): {len(skipped)}")
         for name in skipped:

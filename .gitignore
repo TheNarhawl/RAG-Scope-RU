@@ -31,8 +31,8 @@ data/eval/*.csv
 data/eval/questions.json
 
 # ---------- Эксперименты ----------
-experiments/*
-!experiments/.gitkeep
+#experiments/*
+#!experiments/.gitkeep
 
 # ---------- Модели и кэш HF ----------
 cache/

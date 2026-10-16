@@ -19,3 +19,6 @@ Get-Content experiments\baseline\metrics.json
 
 7) Проверка, записались ли чанки
 python -c "import chromadb; c=chromadb.PersistentClient(path='data/index'); col=c.get_collection('baseline'); print('чанков:', col.count())"
+
+8) evaluate в тегом
+python src/evaluate_retrieval.py --tag qdrant-minilm

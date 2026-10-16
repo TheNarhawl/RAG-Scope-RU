@@ -1,8 +1,9 @@
-pypdf
-sentence-transformers
-pyyaml
-tqdm
-python-dotenv
-torch==2.14.1+cu126
-yaml
-qdrant-client
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+torch==2.14.1
+torchvision==0.29.1
+sentence-transformers==6.1.0
+qdrant-client==1.19.1
+pypdf==6.20.1
+PyYAML==6.0.3
+python-dotenv==1.2.4
