@@ -11,6 +11,7 @@ from pypdf import PdfReader
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
@@ -60,7 +61,11 @@ def pick_device() -> str:
 
 
 def main():
-    cfg = yaml.safe_load((ROOT / "configs" / "baseline.yaml").read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="baseline")
+    args = parser.parse_args()
+
+    cfg = yaml.safe_load((ROOT / "configs" / f"{args.config}.yaml").read_text(encoding="utf-8"))
     ing = cfg["ingest"]
     collection_name = ing["collection"]
 
@@ -120,6 +125,9 @@ def main():
             continue
 
         texts = [p["text"] for p in points]
+        if "e5" in ing["embedding_model"].lower():
+            texts = ["passage: " + t for t in texts]
+            
         embeddings = model.encode(
             texts,
             batch_size=EMBED_BATCH_SIZE,
