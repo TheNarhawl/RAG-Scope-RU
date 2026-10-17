@@ -1,0 +1,14 @@
+meta:
+  name: e5-dense
+
+ingest:
+  embedding_model: intfloat/multilingual-e5-large
+  collection: e5_hybrid
+  chunk_size: 512
+  chunk_overlap: 64
+
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: false

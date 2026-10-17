@@ -8,6 +8,8 @@ services:
       - ../.env
     environment:
       QDRANT_URL: http://qdrant:6333
+      DATA_DIR: /data
+      EXPERIMENTS_DIR: /experiments
     volumes:
       - ../data:/data
       - ../experiments:/experiments

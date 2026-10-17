@@ -1,15 +1,18 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-EXP_DIR = ROOT / "experiments"
-OUT_PATH = EXP_DIR / "RESULTS.md"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from paths import EXPERIMENTS_DIR
+
+OUT_PATH = EXPERIMENTS_DIR / "RESULTS.md"
 
 
 def load_runs() -> list[dict]:
     runs = []
-    for path in sorted(EXP_DIR.glob("*/metrics_*.json")):
+    for path in sorted(EXPERIMENTS_DIR.glob("*/metrics_*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except Exception as e:
@@ -139,6 +142,7 @@ def build_markdown(runs: list[dict]) -> str:
 def main():
     runs = load_runs()
     md = build_markdown(runs)
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(md, encoding="utf-8")
     print(f"Сохранено: {OUT_PATH}")
     print(f"Прогонов в сводке: {len(runs)}")
