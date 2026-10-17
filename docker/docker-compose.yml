@@ -13,6 +13,8 @@ services:
     volumes:
       - ../data:/data
       - ../experiments:/experiments
+      - ../src:/app/src
+      - ../configs:/app/configs
       - hf_cache:/cache/huggingface
     deploy:
       resources:
