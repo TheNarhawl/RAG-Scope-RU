@@ -1,0 +1,15 @@
+meta:
+  name: e5_base-c1024-hybrid
+  device: auto
+ingest:
+  embedding_model: intfloat/multilingual-e5-base
+  collection: e5_base_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+  passage_prefix: 'passage: '
+  query_prefix: 'query: '
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: false

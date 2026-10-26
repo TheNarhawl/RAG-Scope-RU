@@ -1,0 +1,13 @@
+meta:
+  name: rubert_tiny2-c1024-hybrid
+  device: auto
+ingest:
+  embedding_model: cointegrated/rubert-tiny2
+  collection: rubert_tiny2_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: false

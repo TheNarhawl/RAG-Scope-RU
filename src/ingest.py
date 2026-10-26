@@ -96,6 +96,7 @@ def main():
     print(f"Коллекция '{collection_name}' создана (dense + sparse)\n")
 
     is_e5 = "e5" in ing["embedding_model"].lower()
+    passage_prefix = ing.get("passage_prefix", "passage: " if is_e5 else "")
     total_points = 0
     skipped = []
     t0 = time.time()
@@ -121,7 +122,7 @@ def main():
             continue
 
         texts = [p["text"] for p in points]
-        dense_texts = ["passage: " + t for t in texts] if is_e5 else texts
+        dense_texts = [passage_prefix + t for t in texts] if passage_prefix else texts
         dense_embs = dense_model.encode(
             dense_texts, batch_size=EMBED_BATCH_SIZE, show_progress_bar=False,
             convert_to_numpy=True, normalize_embeddings=True,

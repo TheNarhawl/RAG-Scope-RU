@@ -1,0 +1,13 @@
+meta:
+  name: rubert_tiny2-c256-dense
+  device: auto
+ingest:
+  embedding_model: cointegrated/rubert-tiny2
+  collection: rubert_tiny2_c256
+  chunk_size: 256
+  chunk_overlap: 32
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: false
+  use_rerank: false

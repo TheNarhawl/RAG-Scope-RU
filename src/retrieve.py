@@ -11,7 +11,7 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from paths import CONFIGS_DIR, QDRANT_URL
 
-RERANKER_MODEL = "BAAI/bge-reranker-base"
+DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
 
 
 def parse_args():
@@ -33,12 +33,14 @@ def main():
     use_hybrid = ret.get("use_hybrid", False)
     use_rerank = ret.get("use_rerank", False)
     rerank_candidates = ret.get("rerank_candidates", 20)
+    reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
 
     dense_model = SentenceTransformer(ing["embedding_model"])
     client = QdrantClient(url=QDRANT_URL)
 
     is_e5 = "e5" in ing["embedding_model"].lower()
-    q_dense_text = "query: " + query if is_e5 else query
+    query_prefix = ing.get("query_prefix", "query: " if is_e5 else "")
+    q_dense_text = query_prefix + query if query_prefix else query
     q_dense = dense_model.encode([q_dense_text], normalize_embeddings=True)[0].tolist()
 
     if use_hybrid:
@@ -66,14 +68,14 @@ def main():
             collection_name=ing["collection"],
             query=q_dense,
             using=vector_name,
-            limit=top_k,
+            limit=rerank_candidates if use_rerank else top_k,
             with_payload=True,
         )
 
     hits = results.points
 
     if use_rerank:
-        reranker = CrossEncoder(RERANKER_MODEL)
+        reranker = CrossEncoder(reranker_model_name)
         pairs = [(query, h.payload["text"]) for h in hits]
         scores = reranker.predict(pairs)
         ranked = sorted(zip(scores, hits), key=lambda x: x[0], reverse=True)

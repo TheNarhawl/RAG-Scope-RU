@@ -1,0 +1,15 @@
+meta:
+  name: rosberta-c512-hybrid
+  device: auto
+ingest:
+  embedding_model: ai-forever/ru-en-RoSBERTa
+  collection: rosberta_c512
+  chunk_size: 512
+  chunk_overlap: 64
+  passage_prefix: 'search_document: '
+  query_prefix: 'search_query: '
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: false

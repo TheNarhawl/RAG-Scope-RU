@@ -1,0 +1,15 @@
+meta:
+  name: user_bge_m3-c1024-hybrid-rerank
+  device: auto
+ingest:
+  embedding_model: deepvk/USER-bge-m3
+  collection: user_bge_m3_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: true
+  rerank_candidates: 20
+  reranker_model: BAAI/bge-reranker-v2-m3

@@ -15,7 +15,7 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 from paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
 
 KS = [1, 3, 5, 10]
-RERANKER_MODEL = "BAAI/bge-reranker-base"
+DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
 
 
 def slugify(s: str) -> str:
@@ -51,6 +51,7 @@ def main():
     use_hybrid = ret.get("use_hybrid", False)
     use_rerank = ret.get("use_rerank", False)
     rerank_candidates = ret.get("rerank_candidates", 20)
+    reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
 
     questions = json.loads((EVAL_DIR / "questions.json").read_text(encoding="utf-8"))
     if args.limit:
@@ -58,14 +59,16 @@ def main():
 
     dense_model = SentenceTransformer(ing["embedding_model"])
     sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian") if use_hybrid else None
-    reranker = CrossEncoder(RERANKER_MODEL) if use_rerank else None
+    reranker = CrossEncoder(reranker_model_name) if use_rerank else None
     client = QdrantClient(url=QDRANT_URL)
 
     is_e5 = "e5" in ing["embedding_model"].lower()
+    query_prefix = ing.get("query_prefix", "query: " if is_e5 else "")
+
     info = client.get_collection(ing["collection"])
     print(f"Конфиг: {args.config}")
     print(f"Коллекция: {ing['collection']} ({info.points_count} точек)")
-    print(f"Hybrid: {use_hybrid} | Rerank: {use_rerank}")
+    print(f"Hybrid: {use_hybrid} | Rerank: {use_rerank} ({reranker_model_name if use_rerank else '—'})")
     print(f"Вопросов: {len(questions)}\n")
 
     max_k = max(KS)
@@ -76,7 +79,7 @@ def main():
 
     for q in questions:
         qt = q["question"]
-        q_dense_text = "query: " + qt if is_e5 else qt
+        q_dense_text = query_prefix + qt if query_prefix else qt
         q_dense = dense_model.encode([q_dense_text], normalize_embeddings=True)[0].tolist()
 
         if use_hybrid:
@@ -103,7 +106,7 @@ def main():
                 collection_name=ing["collection"],
                 query=q_dense,
                 using=vector_name,
-                limit=max_k,
+                limit=rerank_candidates if use_rerank else max_k,
                 with_payload=True,
             )
 

@@ -1,12 +1,13 @@
 meta:
-  name: e5-dense
-
+  name: e5_large-c512-dense
+  device: auto
 ingest:
   embedding_model: intfloat/multilingual-e5-large
-  collection: e5_hybrid
+  collection: e5_large_c512
   chunk_size: 512
   chunk_overlap: 64
-
+  passage_prefix: 'passage: '
+  query_prefix: 'query: '
 retrieve:
   top_k: 10
   vector_name: dense

@@ -66,4 +66,5 @@ desktop.ini
 *~
 
 # ---------- Dump ----------
-project_dump.txt
+code_dump.txt
+make_dump.py
