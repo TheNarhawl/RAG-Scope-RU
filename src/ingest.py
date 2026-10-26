@@ -18,6 +18,7 @@ from qdrant_client.models import (
 from sentence_transformers import SentenceTransformer
 
 from paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL
+from splitters import naive_chunk_text, structural_chunk_text
 
 UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 
@@ -34,16 +35,6 @@ def load_pdf_pages(path: Path) -> list[tuple[int, str]]:
         if text:
             pages.append((i, text))
     return pages
-
-
-def chunk_text(text: str, size: int, overlap: int) -> list[str]:
-    chunks, start = [], 0
-    while start < len(text):
-        c = text[start:start + size].strip()
-        if c:
-            chunks.append(c)
-        start += size - overlap
-    return chunks
 
 
 def pick_device() -> str:
@@ -65,6 +56,7 @@ def main():
     ing = cfg["ingest"]
     collection_name = ing["collection"]
     vector_name = cfg["retrieve"].get("vector_name", "dense")
+    chunk_strategy = ing.get("chunk_strategy", "naive")
 
     pdfs = sorted(DOCS_DIR.glob("*.pdf"))
     if not pdfs:
@@ -74,6 +66,8 @@ def main():
     print(f"Конфиг: {args.config}")
     print(f"Коллекция: {collection_name}")
     print(f"Модель: {ing['embedding_model']}")
+    print(f"Стратегия чанкинга: {chunk_strategy}")
+    print(f"Чанк: {ing['chunk_size']} / overlap: {ing['chunk_overlap']}")
     print(f"Найдено PDF: {len(pdfs)}")
 
     device = pick_device()
@@ -101,13 +95,15 @@ def main():
     skipped = []
     t0 = time.time()
 
+    # Выбор алгоритма сплиттера
+    split_fn = structural_chunk_text if chunk_strategy == "structural" else naive_chunk_text
+
     for idx, pdf in enumerate(pdfs, start=1):
         pdf_start = time.time()
         points = []
         for page_num, page_text in load_pdf_pages(pdf):
-            for local_i, chunk in enumerate(
-                chunk_text(page_text, ing["chunk_size"], ing["chunk_overlap"])
-            ):
+            chunks = split_fn(page_text, ing["chunk_size"], ing["chunk_overlap"])
+            for local_i, chunk in enumerate(chunks):
                 points.append({
                     "id": make_point_id(pdf.name, page_num, local_i),
                     "text": chunk,

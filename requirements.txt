@@ -12,5 +12,5 @@ matplotlib
 argparse
 qdrant-client[fastembed]>=1.12,<2.0
 rank-bm25>=0.2,<0.3
-gdown>=5.1.0
+gdown>=6.4.2
 requests>=2.31.0
