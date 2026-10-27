@@ -23,9 +23,19 @@ def is_already_done(collection: str, run_name: str) -> bool:
     return any(col_dir.glob(f"metrics_{tag}_*.json"))
 
 
+def collection_has_points(collection: str) -> bool:
+    """Проверяет, существует ли коллекция в Qdrant и содержит ли она точки."""
+    try:
+        client = get_qdrant_client(QDRANT_URL)
+        info = client.get_collection(collection)
+        return (info.points_count or 0) > 0
+    except Exception:
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Пакетный запуск сетки экспериментов")
-    parser.add_argument("--filter", type=str, default="", help="Подстрока для фильтрации папок (например, gte_multilingual)")
+    parser.add_argument("--filter", type=str, default="", help="Подстрока для фильтрации папок (например, labse_ru)")
     parser.add_argument("--force", action="store_true", help="Пересчитать заново, даже если JSON уже есть")
     parser.add_argument("--keep-collections", action="store_true", help="Не удалять коллекцию из Qdrant после оценки группы")
     args = parser.parse_args()
@@ -56,23 +66,26 @@ def main():
 
         print(f"\n==================== ГРУППА: {rel_dir} ====================")
         try:
-            # 1. Индексация (один раз на группу чанка)
-            subprocess.run(
-                [sys.executable, "src/ingest.py", "--config", f"{rel_dir}/dense"],
-                check=True,
-            )
+            # 1. Индексация (пропускаем, если коллекция уже заполнена и нет флага --force)
+            if not args.force and collection_has_points(collection):
+                print(f"[ИНДЕКС ГОТОВ] Коллекция '{collection}' уже заполнена в Qdrant, пропускаем ingest.py.")
+            else:
+                subprocess.run(
+                    [sys.executable, "src/ingest.py", "--config", f"{rel_dir}/dense"],
+                    check=True,
+                )
 
-            # 2. Оценка стратегий в этой папке
+            # 2. Оценка стратегий
             for strat in strats_to_run:
                 subprocess.run(
                     [sys.executable, "src/evaluate_retrieval.py", "--config", f"{rel_dir}/{strat}"],
                     check=True,
                 )
 
-            # 3. Обновление сводной таблицы RESULTS.md после каждой группы
+            # 3. Обновление сводной таблицы RESULTS.md
             subprocess.run([sys.executable, "src/summarize_experiments.py"], check=True)
 
-            # 4. Освобождаем место в Qdrant после завершения всех стратегий группы
+            # 4. Освобождаем память в Qdrant
             if not args.keep_collections:
                 try:
                     get_qdrant_client(QDRANT_URL).delete_collection(collection)

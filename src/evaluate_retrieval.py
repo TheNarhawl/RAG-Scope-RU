@@ -114,7 +114,7 @@ def main():
                             limit=rerank_candidates,
                         ),
                     ],
-                    query=models.RrfQuery(rrf=models.Rrf()),
+                    query=models.FusionQuery(fusion=models.Fusion.RRF),
                     limit=rerank_candidates if use_rerank else max_k,
                     with_payload=True,
                 )
