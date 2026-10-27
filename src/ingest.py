@@ -11,14 +11,13 @@ import torch
 import yaml
 from fastembed import SparseTextEmbedding
 from pypdf import PdfReader
-from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance, Modifier, PointStruct, SparseVectorParams, VectorParams,
 )
-from sentence_transformers import SentenceTransformer
 
 from paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL
 from splitters import naive_chunk_text, structural_chunk_text
+from utils import get_qdrant_client, load_dense_model, pick_device, set_seed
 
 UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 
@@ -37,45 +36,38 @@ def load_pdf_pages(path: Path) -> list[tuple[int, str]]:
     return pages
 
 
-def pick_device() -> str:
-    if torch.cuda.is_available():
-        name = torch.cuda.get_device_name(0)
-        vram = torch.cuda.get_device_properties(0).total_memory / 1e9
-        print(f"Device: cuda ({name}, {vram:.1f} GB VRAM)")
-        return "cuda"
-    print("Device: cpu")
-    return "cpu"
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="baseline")
     args = parser.parse_args()
 
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
+    seed = cfg.get("meta", {}).get("seed", 42)
+    set_seed(seed)
+
     ing = cfg["ingest"]
     collection_name = ing["collection"]
     vector_name = cfg["retrieve"].get("vector_name", "dense")
-    chunk_strategy = ing.get("chunk_strategy", "naive")
+    chunk_strategy = ing.get("chunk_strategy", "structural")
 
     pdfs = sorted(DOCS_DIR.glob("*.pdf"))
     if not pdfs:
         print(f"Нет PDF в {DOCS_DIR}.")
         return
 
-    print(f"Конфиг: {args.config}")
+    print(f"Конфиг: {args.config} (seed={seed})")
     print(f"Коллекция: {collection_name}")
     print(f"Модель: {ing['embedding_model']}")
     print(f"Стратегия чанкинга: {chunk_strategy}")
     print(f"Чанк: {ing['chunk_size']} / overlap: {ing['chunk_overlap']}")
     print(f"Найдено PDF: {len(pdfs)}")
 
-    device = pick_device()
-    dense_model = SentenceTransformer(ing["embedding_model"], device=device)
+    device = pick_device(verbose=True)
+    dense_model = load_dense_model(ing["embedding_model"], device=device)
     dense_dim = dense_model.get_embedding_dimension()
     sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian")
 
-    client = QdrantClient(url=QDRANT_URL)
+    client = get_qdrant_client(QDRANT_URL)
     try:
         client.delete_collection(collection_name)
         print(f"Коллекция '{collection_name}' удалена")
@@ -95,7 +87,6 @@ def main():
     skipped = []
     t0 = time.time()
 
-    # Выбор алгоритма сплиттера
     split_fn = structural_chunk_text if chunk_strategy == "structural" else naive_chunk_text
 
     for idx, pdf in enumerate(pdfs, start=1):
@@ -120,8 +111,11 @@ def main():
         texts = [p["text"] for p in points]
         dense_texts = [passage_prefix + t for t in texts] if passage_prefix else texts
         dense_embs = dense_model.encode(
-            dense_texts, batch_size=EMBED_BATCH_SIZE, show_progress_bar=False,
-            convert_to_numpy=True, normalize_embeddings=True,
+            dense_texts,
+            batch_size=EMBED_BATCH_SIZE,
+            show_progress_bar=False,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
         )
         sparse_embs = list(sparse_model.embed(texts))
 
@@ -136,16 +130,21 @@ def main():
                     },
                 },
                 payload={
-                    "text": p["text"], "source": p["source"],
-                    "page": p["page"], "chunk_id": p["chunk_id"],
+                    "text": p["text"],
+                    "source": p["source"],
+                    "page": p["page"],
+                    "chunk_id": p["chunk_id"],
                 },
             )
             for i, p in enumerate(points)
         ]
 
         client.upload_points(
-            collection_name=collection_name, points=qdrant_points,
-            batch_size=256, parallel=1, wait=True,
+            collection_name=collection_name,
+            points=qdrant_points,
+            batch_size=256,
+            parallel=1,
+            wait=True,
         )
         total_points += len(qdrant_points)
         print(

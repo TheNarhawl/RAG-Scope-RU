@@ -6,10 +6,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import yaml
 from fastembed import SparseTextEmbedding
-from qdrant_client import QdrantClient, models
-from sentence_transformers import CrossEncoder, SentenceTransformer
+from qdrant_client import models
 
 from paths import CONFIGS_DIR, QDRANT_URL
+from utils import (
+    get_qdrant_client,
+    load_dense_model,
+    load_reranker_model,
+    pick_device,
+    set_seed,
+)
 
 DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
 
@@ -24,6 +30,8 @@ def parse_args():
 def main():
     args = parse_args()
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
+    set_seed(cfg.get("meta", {}).get("seed", 42))
+
     ing = cfg["ingest"]
     ret = cfg["retrieve"]
 
@@ -35,8 +43,9 @@ def main():
     rerank_candidates = ret.get("rerank_candidates", 20)
     reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
 
-    dense_model = SentenceTransformer(ing["embedding_model"])
-    client = QdrantClient(url=QDRANT_URL)
+    device = pick_device(verbose=False)
+    dense_model = load_dense_model(ing["embedding_model"], device=device)
+    client = get_qdrant_client(QDRANT_URL)
 
     is_e5 = "e5" in ing["embedding_model"].lower()
     query_prefix = ing.get("query_prefix", "query: " if is_e5 else "")
@@ -74,8 +83,8 @@ def main():
 
     hits = results.points
 
-    if use_rerank:
-        reranker = CrossEncoder(reranker_model_name)
+    if use_rerank and hits:
+        reranker = load_reranker_model(reranker_model_name, device=device)
         pairs = [(query, h.payload["text"]) for h in hits]
         scores = reranker.predict(pairs)
         ranked = sorted(zip(scores, hits), key=lambda x: x[0], reverse=True)

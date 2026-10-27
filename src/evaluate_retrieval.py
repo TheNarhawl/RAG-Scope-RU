@@ -1,4 +1,5 @@
 import argparse
+import gc
 import json
 import sys
 import time
@@ -7,12 +8,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import torch
 import yaml
 from fastembed import SparseTextEmbedding
-from qdrant_client import QdrantClient, models
-from sentence_transformers import CrossEncoder, SentenceTransformer
+from qdrant_client import models
 
 from paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
+from utils import (
+    get_qdrant_client,
+    load_dense_model,
+    load_reranker_model,
+    pick_device,
+    set_seed,
+)
 
 KS = [1, 3, 5, 10]
 DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
@@ -44,6 +52,9 @@ def parse_args():
 def main():
     args = parse_args()
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
+    seed = cfg.get("meta", {}).get("seed", 42)
+    set_seed(seed)
+
     ing = cfg["ingest"]
     ret = cfg["retrieve"]
 
@@ -57,16 +68,17 @@ def main():
     if args.limit:
         questions = questions[: args.limit]
 
-    dense_model = SentenceTransformer(ing["embedding_model"])
+    device = pick_device(verbose=False)
+    dense_model = load_dense_model(ing["embedding_model"], device=device)
     sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian") if use_hybrid else None
-    reranker = CrossEncoder(reranker_model_name) if use_rerank else None
-    client = QdrantClient(url=QDRANT_URL)
+    reranker = load_reranker_model(reranker_model_name, device=device) if use_rerank else None
+    client = get_qdrant_client(QDRANT_URL)
 
     is_e5 = "e5" in ing["embedding_model"].lower()
     query_prefix = ing.get("query_prefix", "query: " if is_e5 else "")
 
     info = client.get_collection(ing["collection"])
-    print(f"Конфиг: {args.config}")
+    print(f"Конфиг: {args.config} (seed={seed}, device={device})")
     print(f"Коллекция: {ing['collection']} ({info.points_count} точек)")
     print(f"Hybrid: {use_hybrid} | Rerank: {use_rerank} ({reranker_model_name if use_rerank else '—'})")
     print(f"Вопросов: {len(questions)}\n")
@@ -110,7 +122,7 @@ def main():
                 with_payload=True,
             )
 
-        if use_rerank:
+        if use_rerank and res.points:
             pairs = [(qt, h.payload["text"]) for h in res.points]
             scores = reranker.predict(pairs)
             ranked = sorted(zip(scores, res.points), key=lambda x: x[0], reverse=True)
@@ -150,11 +162,28 @@ def main():
     out_dir = EXPERIMENTS_DIR / ing["collection"]
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"metrics_{tag}_{ts}.json"
-    out_path.write_text(json.dumps({
-        "config": cfg, "tag": tag, "timestamp": ts,
-        "summary": summary, "per_question": per_q,
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(
+            {
+                "config": cfg,
+                "tag": tag,
+                "timestamp": ts,
+                "summary": summary,
+                "per_question": per_q,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     print(f"Сохранено: {out_path}")
+
+    del dense_model
+    if reranker is not None:
+        del reranker
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
