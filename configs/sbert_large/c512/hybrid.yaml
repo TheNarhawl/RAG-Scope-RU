@@ -1,0 +1,14 @@
+meta:
+  name: sbert_large-c512-hybrid
+  device: auto
+ingest:
+  embedding_model: ai-forever/sbert_large_nlu_ru
+  collection: sbert_large_c512
+  chunk_size: 512
+  chunk_overlap: 64
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: false

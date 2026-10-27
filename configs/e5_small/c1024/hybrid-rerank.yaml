@@ -6,6 +6,7 @@ ingest:
   collection: e5_small_c1024
   chunk_size: 1024
   chunk_overlap: 128
+  chunk_strategy: structural
   passage_prefix: 'passage: '
   query_prefix: 'query: '
 retrieve:

@@ -6,8 +6,7 @@ ingest:
   collection: rosberta_c512
   chunk_size: 512
   chunk_overlap: 64
-  passage_prefix: 'search_document: '
-  query_prefix: 'search_query: '
+  chunk_strategy: structural
 retrieve:
   top_k: 10
   vector_name: dense

@@ -1,0 +1,14 @@
+meta:
+  name: gte_multilingual-c256-dense
+  device: auto
+ingest:
+  embedding_model: Alibaba-NLP/gte-multilingual-base
+  collection: gte_multilingual_c256
+  chunk_size: 256
+  chunk_overlap: 32
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: false
+  use_rerank: false

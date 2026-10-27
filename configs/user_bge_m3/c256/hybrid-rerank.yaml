@@ -1,0 +1,16 @@
+meta:
+  name: user_bge_m3-c256-hybrid-rerank
+  device: auto
+ingest:
+  embedding_model: deepvk/USER-bge-m3
+  collection: user_bge_m3_c256
+  chunk_size: 256
+  chunk_overlap: 32
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: true
+  rerank_candidates: 20
+  reranker_model: BAAI/bge-reranker-v2-m3

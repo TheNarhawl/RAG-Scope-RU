@@ -1,0 +1,16 @@
+meta:
+  name: gte_multilingual-c2048-hybrid-rerank
+  device: auto
+ingest:
+  embedding_model: Alibaba-NLP/gte-multilingual-base
+  collection: gte_multilingual_c2048
+  chunk_size: 2048
+  chunk_overlap: 256
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: true
+  use_rerank: true
+  rerank_candidates: 20
+  reranker_model: BAAI/bge-reranker-v2-m3

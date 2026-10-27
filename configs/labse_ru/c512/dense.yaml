@@ -1,0 +1,14 @@
+meta:
+  name: labse_ru-c512-dense
+  device: auto
+ingest:
+  embedding_model: cointegrated/LaBSE-en-ru
+  collection: labse_ru_c512
+  chunk_size: 512
+  chunk_overlap: 64
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: false
+  use_rerank: false
