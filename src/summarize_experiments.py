@@ -9,6 +9,25 @@ from paths import EXPERIMENTS_DIR
 
 OUT_PATH = EXPERIMENTS_DIR / "RESULTS.md"
 
+# НАСТРОЙКА КОЛОНОК ТАБЛИЦЫ
+COLUMNS_CONFIG = {
+    "#": True,
+    "Tag": True,
+    "Embedding": True,
+    "Chunk": True,
+    "Overlap": True,
+    "N": True,
+    "Hit@1": True,
+    "Hit@3": True,
+    "Hit@5": True,
+    "Hit@10": True,
+    "MRR": True,
+    "Faithful": True,
+    "AnsCorr": True,
+    "ms/q": True,
+    "Timestamp": True,
+}
+
 
 def load_runs() -> list[dict]:
     runs = []
@@ -74,6 +93,25 @@ def short_model(name: str) -> str:
     return name
 
 
+COLUMN_EXTRACTORS = [
+    ("#", lambda r, i: str(i)),
+    ("Tag", lambda r, i: fmt_any(r["tag"])),
+    ("Embedding", lambda r, i: short_model(r["embedding"])),
+    ("Chunk", lambda r, i: fmt_any(r["chunk_size"])),
+    ("Overlap", lambda r, i: fmt_any(r["overlap"])),
+    ("N", lambda r, i: fmt_any(r["n"])),
+    ("Hit@1", lambda r, i: fmt_float(r["hit@1"])),
+    ("Hit@3", lambda r, i: fmt_float(r["hit@3"])),
+    ("Hit@5", lambda r, i: fmt_float(r["hit@5"])),
+    ("Hit@10", lambda r, i: fmt_float(r["hit@10"])),
+    ("MRR", lambda r, i: fmt_float(r["mrr"])),
+    ("Faithful", lambda r, i: fmt_float(r["faithfulness"])),
+    ("AnsCorr", lambda r, i: fmt_float(r["answer_correctness"])),
+    ("ms/q", lambda r, i: fmt_ms(r["ms_per_query"])),
+    ("Timestamp", lambda r, i: fmt_any(r["timestamp"])),
+]
+
+
 def build_markdown(runs: list[dict]) -> str:
     lines = []
     lines.append("# Experiment results\n")
@@ -84,47 +122,35 @@ def build_markdown(runs: list[dict]) -> str:
         lines.append("_Пока нет ни одного прогона._")
         return "\n".join(lines)
 
-    headers = [
-        "#", "Tag", "Embedding", "Chunk", "Overlap", "N",
-        "Hit@1", "Hit@3", "Hit@5", "Hit@10", "MRR",
-        "Faithful", "AnsCorr",
-        "ms/q", "Timestamp",
+    active_columns = [
+        (name, fn)
+        for name, fn in COLUMN_EXTRACTORS
+        if COLUMNS_CONFIG.get(name, True)
     ]
+
+    if not active_columns:
+        lines.append("_Все колонки таблицы отключены в COLUMNS_CONFIG._")
+        return "\n".join(lines)
+
+    headers = [name for name, _ in active_columns]
     lines.append("| " + " | ".join(headers) + " |")
     lines.append("|" + "|".join(["---"] * len(headers)) + "|")
 
     runs_sorted = sorted(runs, key=lambda r: r["timestamp"])
 
     for i, r in enumerate(runs_sorted, start=1):
-        cells = [
-            str(i),
-            fmt_any(r["tag"]),
-            short_model(r["embedding"]),
-            fmt_any(r["chunk_size"]),
-            fmt_any(r["overlap"]),
-            fmt_any(r["n"]),
-            fmt_float(r["hit@1"]),
-            fmt_float(r["hit@3"]),
-            fmt_float(r["hit@5"]),
-            fmt_float(r["hit@10"]),
-            fmt_float(r["mrr"]),
-            fmt_float(r["faithfulness"]),
-            fmt_float(r["answer_correctness"]),
-            fmt_ms(r["ms_per_query"]),
-            fmt_any(r["timestamp"]),
-        ]
+        cells = [fn(r, i) for _, fn in active_columns]
         assert len(cells) == len(headers), f"Строка {i}: {len(cells)} ячеек вместо {len(headers)}"
         lines.append("| " + " | ".join(cells) + " |")
 
-    # Пояснение к пустым колонкам
+    ragas_active = COLUMNS_CONFIG.get("Faithful", True) or COLUMNS_CONFIG.get("AnsCorr", True)
     has_ragas = any(r["faithfulness"] is not None for r in runs_sorted)
-    if not has_ragas:
+    if ragas_active and not has_ragas:
         lines.append(
             "\nFaithful и AnsCorr (RAGAS) появятся после подключения оценки "
             "генерации через LLM + RAGAS.\n"
         )
 
-    # Best run по MRR
     valid = [r for r in runs_sorted if r["mrr"] is not None]
     if valid:
         best = max(valid, key=lambda r: r["mrr"])
