@@ -1,5 +1,6 @@
 meta:
   name: gte_multilingual-c1024-hybrid
+  seed: 42
   device: auto
 ingest:
   embedding_model: Alibaba-NLP/gte-multilingual-base

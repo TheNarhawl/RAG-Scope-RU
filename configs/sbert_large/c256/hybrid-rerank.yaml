@@ -1,5 +1,6 @@
 meta:
   name: sbert_large-c256-hybrid-rerank
+  seed: 42
   device: auto
 ingest:
   embedding_model: ai-forever/sbert_large_nlu_ru

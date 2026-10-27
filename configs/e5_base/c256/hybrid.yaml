@@ -1,5 +1,6 @@
 meta:
   name: e5_base-c256-hybrid
+  seed: 42
   device: auto
 ingest:
   embedding_model: intfloat/multilingual-e5-base

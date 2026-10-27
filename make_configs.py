@@ -3,7 +3,6 @@ import yaml
 
 CONFIGS_DIR = Path(__file__).resolve().parent / "configs"
 
-# Базовая сетка чанков по умолчанию (chunk_size, chunk_overlap)
 DEFAULT_CHUNKS = [
     (256, 32),
     (512, 64),
@@ -11,7 +10,6 @@ DEFAULT_CHUNKS = [
 ]
 
 MODELS = {
-    # --- Семейство E5 (требуют префиксы passage: и query:) ---
     "e5_small": {
         "hf_name": "intfloat/multilingual-e5-small",
         "passage_prefix": "passage: ",
@@ -42,7 +40,6 @@ MODELS = {
         "hf_name": "Alibaba-NLP/gte-multilingual-base",
         "passage_prefix": "",
         "query_prefix": "",
-        # Контекст до 8192 токенов
         "chunks": [(256, 32), (512, 64), (1024, 128), (2048, 256)],
     },
 
@@ -146,7 +143,11 @@ def generate():
                 }
 
                 cfg_data = {
-                    "meta": {"name": run_name, "device": "auto"},
+                    "meta": {
+                        "name": run_name,
+                        "seed": 42,
+                        "device": "auto",
+                    },
                     "ingest": ingest_block,
                     "retrieve": retrieve_block,
                 }
@@ -158,7 +159,64 @@ def generate():
                 )
                 count += 1
 
-    print(f"Сгенерировано {count} конфигов в {CONFIGS_DIR}")
+    ab_dir = CONFIGS_DIR / "ab_chunking"
+    ab_dir.mkdir(parents=True, exist_ok=True)
+
+    # e5_naive
+    yaml.dump(
+        {
+            "meta": {"name": "ab-e5-naive-c512", "seed": 42, "device": "auto"},
+            "ingest": {
+                "embedding_model": "intfloat/multilingual-e5-large",
+                "collection": "ab_e5_c512_naive",
+                "chunk_size": 512,
+                "chunk_overlap": 64,
+                "chunk_strategy": "naive",
+                "passage_prefix": "passage: ",
+                "query_prefix": "query: ",
+            },
+            "retrieve": {
+                "top_k": 10,
+                "vector_name": "dense",
+                "use_hybrid": True,
+                "use_rerank": False,
+            },
+        },
+        open(ab_dir / "e5_naive.yaml", "w", encoding="utf-8"),
+        sort_keys=False,
+    )
+
+    # e5_structural
+    yaml.dump(
+        {
+            "meta": {
+                "name": "ab-e5-structural-c512",
+                "seed": 42,
+                "device": "auto",
+            },
+            "ingest": {
+                "embedding_model": "intfloat/multilingual-e5-large",
+                "collection": "ab_e5_c512_structural",
+                "chunk_size": 512,
+                "chunk_overlap": 64,
+                "chunk_strategy": "structural",
+                "passage_prefix": "passage: ",
+                "query_prefix": "query: ",
+            },
+            "retrieve": {
+                "top_k": 10,
+                "vector_name": "dense",
+                "use_hybrid": True,
+                "use_rerank": False,
+            },
+        },
+        open(ab_dir / "e5_structural.yaml", "w", encoding="utf-8"),
+        sort_keys=False,
+    )
+
+    print(
+        f"Сгенерировано {count + 2} конфигов (включая A/B тесты) в {CONFIGS_DIR}"
+    )
 
 
 if __name__ == "__main__":

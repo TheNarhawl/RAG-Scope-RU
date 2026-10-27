@@ -1,5 +1,6 @@
 meta:
   name: rosberta-c1024-hybrid-rerank
+  seed: 42
   device: auto
 ingest:
   embedding_model: ai-forever/ru-en-RoSBERTa
