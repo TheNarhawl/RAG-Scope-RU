@@ -96,23 +96,36 @@ def main():
 
         if use_hybrid:
             q_sparse = list(sparse_model.embed([qt]))[0]
-            res = client.query_points(
-                collection_name=ing["collection"],
-                prefetch=[
-                    models.Prefetch(query=q_dense, using=vector_name, limit=rerank_candidates),
-                    models.Prefetch(
-                        query=models.SparseVector(
-                            indices=q_sparse.indices.tolist(),
-                            values=q_sparse.values.tolist(),
+            if len(q_sparse.indices) > 0:
+                res = client.query_points(
+                    collection_name=ing["collection"],
+                    prefetch=[
+                        models.Prefetch(
+                            query=q_dense,
+                            using=vector_name,
+                            limit=rerank_candidates,
                         ),
-                        using="sparse",
-                        limit=rerank_candidates,
-                    ),
-                ],
-                query=models.RrfQuery(rrf=models.Rrf()),
-                limit=rerank_candidates if use_rerank else max_k,
-                with_payload=True,
-            )
+                        models.Prefetch(
+                            query=models.SparseVector(
+                                indices=q_sparse.indices.tolist(),
+                                values=q_sparse.values.tolist(),
+                            ),
+                            using="sparse",
+                            limit=rerank_candidates,
+                        ),
+                    ],
+                    query=models.RrfQuery(rrf=models.Rrf()),
+                    limit=rerank_candidates if use_rerank else max_k,
+                    with_payload=True,
+                )
+            else:
+                res = client.query_points(
+                    collection_name=ing["collection"],
+                    query=q_dense,
+                    using=vector_name,
+                    limit=rerank_candidates if use_rerank else max_k,
+                    with_payload=True,
+                )
         else:
             res = client.query_points(
                 collection_name=ing["collection"],
