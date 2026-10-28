@@ -16,16 +16,16 @@ COLUMNS_CONFIG = {
     "Embedding": True,
     "Chunk": True,
     "Overlap": True,
-    "N": True,
+    "N": False,
     "Hit@1": True,
     "Hit@3": True,
     "Hit@5": True,
     "Hit@10": True,
     "MRR": True,
-    "Faithful": True,
-    "AnsCorr": True,
+    "Faithful": False,
+    "AnsCorr": False,
     "ms/q": True,
-    "Timestamp": True,
+    "Timestamp": False,
 }
 
 
