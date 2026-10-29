@@ -48,7 +48,7 @@ MODELS = {
         "hf_name": "deepvk/USER-bge-m3",
         "passage_prefix": "",
         "query_prefix": "",
-        "chunks": [(256, 32), (512, 64), (1024, 128)],
+        "chunks": [(256, 32), (512, 64), (1024, 128), (2048, 256)],
     },
     "user_base": {
         "hf_name": "deepvk/USER-base",
@@ -74,26 +74,32 @@ MODELS = {
         "hf_name": "cointegrated/rubert-tiny2",
         "passage_prefix": "",
         "query_prefix": "",
-        "chunks": [(256, 32), (512, 64)],
+        "chunks": [(256, 32), (512, 64), (1024, 128)],
     },
     "labse_ru": {
         "hf_name": "cointegrated/LaBSE-en-ru",
         "passage_prefix": "",
         "query_prefix": "",
-        "chunks": [(256, 32), (512, 64)],
+        "chunks": [(256, 32), (512, 64), (1024, 128)],
     },
     "mpnet_multilingual": {
         "hf_name": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         "passage_prefix": "",
         "query_prefix": "",
-        "chunks": [(256, 32), (512, 64)],
+        "chunks": [(256, 32), (512, 64), (1024, 128)],
     },
 }
 
 STRATEGIES = {
+    "sparse": {
+        "use_hybrid": False,
+        "use_rerank": False,
+        "vector_name": "sparse",
+    },
     "dense": {
         "use_hybrid": False,
         "use_rerank": False,
+        "vector_name": "dense",
     },
     "hybrid": {
         "use_hybrid": True,

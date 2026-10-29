@@ -1,0 +1,17 @@
+meta:
+  name: e5_large-c1024-sparse
+  seed: 42
+  device: auto
+ingest:
+  embedding_model: intfloat/multilingual-e5-large
+  collection: e5_large_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+  chunk_strategy: structural
+  passage_prefix: 'passage: '
+  query_prefix: 'query: '
+retrieve:
+  top_k: 10
+  vector_name: sparse
+  use_hybrid: false
+  use_rerank: false

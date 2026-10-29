@@ -1,0 +1,15 @@
+meta:
+  name: bge_m3-c256-sparse
+  seed: 42
+  device: auto
+ingest:
+  embedding_model: BAAI/bge-m3
+  collection: bge_m3_c256
+  chunk_size: 256
+  chunk_overlap: 32
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: sparse
+  use_hybrid: false
+  use_rerank: false

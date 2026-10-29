@@ -8,6 +8,8 @@ ingest:
   chunk_size: 512
   chunk_overlap: 64
   chunk_strategy: structural
+  passage_prefix: 'passage: '
+  query_prefix: 'query: '
 retrieve:
   top_k: 10
   vector_name: dense

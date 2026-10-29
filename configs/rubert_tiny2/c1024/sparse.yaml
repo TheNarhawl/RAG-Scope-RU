@@ -1,0 +1,15 @@
+meta:
+  name: rubert_tiny2-c1024-sparse
+  seed: 42
+  device: auto
+ingest:
+  embedding_model: cointegrated/rubert-tiny2
+  collection: rubert_tiny2_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: sparse
+  use_hybrid: false
+  use_rerank: false

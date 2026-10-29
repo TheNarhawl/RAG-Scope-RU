@@ -7,6 +7,7 @@ ingest:
   collection: rubert_tiny2_c1024
   chunk_size: 1024
   chunk_overlap: 128
+  chunk_strategy: structural
 retrieve:
   top_k: 10
   vector_name: dense

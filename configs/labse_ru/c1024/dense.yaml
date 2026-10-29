@@ -1,0 +1,15 @@
+meta:
+  name: labse_ru-c1024-dense
+  seed: 42
+  device: auto
+ingest:
+  embedding_model: cointegrated/LaBSE-en-ru
+  collection: labse_ru_c1024
+  chunk_size: 1024
+  chunk_overlap: 128
+  chunk_strategy: structural
+retrieve:
+  top_k: 10
+  vector_name: dense
+  use_hybrid: false
+  use_rerank: false

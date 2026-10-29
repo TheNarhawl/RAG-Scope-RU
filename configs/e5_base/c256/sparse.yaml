@@ -1,0 +1,17 @@
+meta:
+  name: e5_base-c256-sparse
+  seed: 42
+  device: auto
+ingest:
+  embedding_model: intfloat/multilingual-e5-base
+  collection: e5_base_c256
+  chunk_size: 256
+  chunk_overlap: 32
+  chunk_strategy: structural
+  passage_prefix: 'passage: '
+  query_prefix: 'query: '
+retrieve:
+  top_k: 10
+  vector_name: sparse
+  use_hybrid: false
+  use_rerank: false
