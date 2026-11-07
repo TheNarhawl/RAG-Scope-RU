@@ -27,23 +27,18 @@ except ImportError:
     SparseTextEmbedding = None
     models = None
 
-KS = [1, 3, 5, 10]
-DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
+from constants import (
+    DEFAULT_RERANKER_MODEL,
+    DEFAULT_RERANK_CANDIDATES,
+    DEFAULT_SEED,
+    DEFAULT_SPARSE_MODEL,
+    DEFAULT_VECTOR_NAME,
+    KS,
+    SPARSE_LANGUAGE,
+)
+from metrics import hit_at_k, rr, slugify
 
-
-def slugify(s: str) -> str:
-    return s.lower().replace(" ", "_").replace("+", "").replace("-", "_")
-
-
-def hit_at_k(sources: list[str], target: str, k: int) -> float:
-    return 1.0 if target in sources[:k] else 0.0
-
-
-def rr(sources: list[str], target: str) -> float:
-    for i, s in enumerate(sources, start=1):
-        if s == target:
-            return 1.0 / i
-    return 0.0
+__all__ = ["hit_at_k", "rr", "slugify", "KS", "DEFAULT_RERANKER_MODEL"]
 
 
 def parse_args():
@@ -57,16 +52,16 @@ def parse_args():
 def main():
     args = parse_args()
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
-    seed = cfg.get("meta", {}).get("seed", 42)
+    seed = cfg.get("meta", {}).get("seed", DEFAULT_SEED)
     set_seed(seed)
 
     ing = cfg["ingest"]
     ret = cfg["retrieve"]
 
-    vector_name = ret.get("vector_name", "dense")
+    vector_name = ret.get("vector_name", DEFAULT_VECTOR_NAME)
     use_hybrid = ret.get("use_hybrid", False)
     use_rerank = ret.get("use_rerank", False)
-    rerank_candidates = ret.get("rerank_candidates", 20)
+    rerank_candidates = ret.get("rerank_candidates", DEFAULT_RERANK_CANDIDATES)
     reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
 
     max_k = max(KS)
@@ -84,7 +79,7 @@ def main():
         if (use_hybrid or vector_name == "dense") else None
     )
     sparse_model = (
-        SparseTextEmbedding(model_name="Qdrant/bm25", language="russian")
+        SparseTextEmbedding(model_name=DEFAULT_SPARSE_MODEL, language=SPARSE_LANGUAGE)
         if (use_hybrid or vector_name == "sparse") else None
     )
     reranker = (

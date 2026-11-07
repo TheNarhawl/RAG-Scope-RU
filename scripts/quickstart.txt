@@ -1,0 +1,28 @@
+# === Основные команды для запуска ===
+
+1) Активация окружения (Windows PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+2) Скачивание датасета и распаковка документов
+python src/prepare_data.py
+
+3) Сборка векторного индекса в Qdrant
+python src/ingest.py --config baseline
+
+4) Интерактивная проверка поиска
+python src/retrieve.py "что такое логистический рост популяции?"
+python src/retrieve.py "как классифицируются состояния равновесия?"
+
+5) Оценка качества поиска (Hit@K, MRR, Latency)
+python src/evaluate_retrieval.py --config baseline
+
+6) Прогон всей координатной сетки экспериментов
+python src/run_grid.py
+
+7) Сборка сводки и таблицы лидеров
+python src/summarize_experiments.py
+
+8) Запуск тестов и линтера
+pytest
+flake8 src tests scripts
+

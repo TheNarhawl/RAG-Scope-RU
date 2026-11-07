@@ -1,17 +1,17 @@
 # Graph Report - RAG-Scope-RU  (2026-11-07)
 
 ## Corpus Check
-- 255 files · ~993,067 words
+- 262 files · ~993,960 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 6, .ipynb 2, .example 1)
 
 ## Summary
-- 2851 nodes · 2814 edges · 171 communities (169 shown, 2 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.87)
+- 2882 nodes · 2886 edges · 172 communities (169 shown, 3 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `654a3485`
+- Built from commit: `483ec7a3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -185,30 +185,31 @@
 - Baseline Configuration
 - evaluate_retrieval.py
 - Q: Why does structural_chunk_text() connect Test Suite: Splitters to Document Ingestion Pipeline?
+- pathlib
 
 ## God Nodes (most connected - your core abstractions)
 1. `main()` - 13 edges
-2. `structural_chunk_text()` - 12 edges
-3. `get_qdrant_client()` - 12 edges
-4. `main()` - 11 edges
+2. `get_qdrant_client()` - 13 edges
+3. `structural_chunk_text()` - 12 edges
+4. `pick_device()` - 11 edges
 5. `load_dense_model()` - 11 edges
-6. `pick_device()` - 10 edges
-7. `RAG-Scope-RU Sandbox` - 10 edges
-8. `set_seed()` - 9 edges
+6. `main()` - 10 edges
+7. `set_seed()` - 10 edges
+8. `RAG-Scope-RU Sandbox` - 10 edges
 9. `app` - 9 edges
 10. `main()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Best Run: user_bge_m3_c2048_hybrid_rerank` --semantically_similar_to--> `Best Run Finding (USER-bge-m3 c2048)`  [INFERRED] [semantically similar]
   README.md → experiments/RESULTS.md
+- `test_make_point_id_determinism()` --calls--> `make_point_id()`  [INFERRED]
+  tests/test_ingest_helpers.py → src/ingest.py
+- `test_make_point_id_uniqueness()` --calls--> `make_point_id()`  [INFERRED]
+  tests/test_ingest_helpers.py → src/ingest.py
+- `test_slugify()` --calls--> `slugify()`  [INFERRED]
+  tests/test_metrics.py → src/metrics.py
 - `test_hit_at_k()` --calls--> `hit_at_k()`  [INFERRED]
-  tests/test_metrics.py → src/evaluate_retrieval.py
-- `test_reciprocal_rank()` --calls--> `rr()`  [INFERRED]
-  tests/test_metrics.py → src/evaluate_retrieval.py
-- `test_empty_text()` --calls--> `structural_chunk_text()`  [INFERRED]
-  tests/test_splitters.py → src/splitters.py
-- `test_fallback_character_split()` --calls--> `structural_chunk_text()`  [INFERRED]
-  tests/test_splitters.py → src/splitters.py
+  tests/test_metrics.py → src/metrics.py
 
 ## Import Cycles
 - None detected.
@@ -217,15 +218,15 @@
 - **Core Vector Search and Embedding Stack** — requirements_sentence_transformers, requirements_fastembed, requirements_qdrant_client [INFERRED 0.85]
 - **RAG Retrieval Pipeline Search Strategies** — readme_dense_retrieval_strategy, readme_sparse_bm25_strategy, readme_hybrid_retrieval_strategy, readme_cross_encoder_rerank_strategy [INFERRED 0.85]
 
-## Communities (171 total, 2 thin omitted)
+## Communities (172 total, 3 thin omitted)
 
 ### Community 0 - "Docker Infrastructure Setup"
 Cohesion: 0.07
 Nodes (26): build, depends_on, deploy, env_file, environment, image, restart, volumes (+18 more)
 
 ### Community 1 - "Utility Functions & Helpers"
-Cohesion: 0.17
-Nodes (8): main(), main(), parse_args(), _fix_non_persistent_buffers(), load_dense_model(), load_reranker_model(), pick_device(), set_seed()
+Cohesion: 0.14
+Nodes (10): main(), parse_args(), _fix_non_persistent_buffers(), load_dense_model(), load_reranker_model(), pick_device(), set_seed(), test_get_qdrant_client() (+2 more)
 
 ### Community 2 - "E5-BASE C1024 Hybrid Rerank Config"
 Cohesion: 0.10
@@ -264,8 +265,8 @@ Cohesion: 0.10
 Nodes (19): ingest, chunk_overlap, chunk_size, chunk_strategy, collection, embedding_model, passage_prefix, query_prefix (+11 more)
 
 ### Community 11 - "structural_chunk_text"
-Cohesion: 0.16
-Nodes (9): structural_chunk_text(), test_empty_text(), test_fallback_character_split(), test_large_block_recursive_split(), test_overlap_logic_with_sentences(), test_real_gost_simulation(), test_sentence_punctuation_preserved(), test_short_text_no_split() (+1 more)
+Cohesion: 0.12
+Nodes (13): naive_chunk_text(), structural_chunk_text(), test_empty_text(), test_fallback_character_split(), test_large_block_recursive_split(), test_naive_chunk_empty(), test_naive_chunk_overlap(), test_naive_chunk_short_text() (+5 more)
 
 ### Community 12 - "AB-CHUNKING E5 Naive Config"
 Cohesion: 0.11
@@ -868,28 +869,28 @@ Cohesion: 0.15
 Nodes (16): Best Run Finding (USER-bge-m3 c2048), Retrieval Experiment Results Leaderboard, Best Run: user_bge_m3_c2048_hybrid_rerank, Cross-Encoder Reranking Strategy, Dense Retrieval Strategy, Docker Compose GPU Environment, Retrieval Evaluation Metrics (Hit@K, MRR, Latency), Hybrid Retrieval with RRF Strategy (+8 more)
 
 ### Community 162 - "Module: Prepare Data"
-Cohesion: 0.24
+Cohesion: 0.23
 Nodes (4): convert_questions(), download_eval_dataset(), main(), unpack_or_verify_pdfs()
 
 ### Community 163 - "Module: Summarize Experiments"
-Cohesion: 0.19
-Nodes (5): build_markdown(), fmt_float(), load_runs(), main(), short_model()
+Cohesion: 0.21
+Nodes (11): build_markdown(), fmt_any(), fmt_float(), fmt_ms(), load_runs(), main(), short_model(), test_build_markdown_empty() (+3 more)
 
 ### Community 164 - "Module: Run Grid"
 Cohesion: 0.23
 Nodes (6): generate(), collection_has_points(), is_already_done(), main(), slugify(), get_qdrant_client()
 
 ### Community 165 - "Document Ingestion Pipeline"
-Cohesion: 0.22
-Nodes (3): load_pdf_pages(), make_point_id(), naive_chunk_text()
+Cohesion: 0.23
+Nodes (6): load_pdf_pages(), main(), make_point_id(), test_make_point_id_determinism(), test_make_point_id_uniqueness(), test_make_point_id_valid_uuid5()
 
 ### Community 166 - "Baseline Configuration"
 Cohesion: 0.17
 Nodes (11): ingest, chunk_overlap, chunk_size, collection, embedding_model, meta, device, name (+3 more)
 
 ### Community 167 - "evaluate_retrieval.py"
-Cohesion: 0.25
-Nodes (7): hit_at_k(), main(), parse_args(), rr(), slugify(), test_hit_at_k(), test_reciprocal_rank()
+Cohesion: 0.21
+Nodes (8): main(), parse_args(), hit_at_k(), rr(), slugify(), test_hit_at_k(), test_reciprocal_rank(), test_slugify()
 
 ### Community 170 - "Q: Why does structural_chunk_text() connect Test Suite: Splitters to Document Ingestion Pipeline?"
 Cohesion: 0.40
@@ -897,23 +898,23 @@ Nodes (4): Answer, Outcome, Q: Why does structural_chunk_text() connect Test Sui
 
 ## Knowledge Gaps
 - **9 isolated node(s):** `Best Run: user_bge_m3_c2048_hybrid_rerank`, `Docker Compose GPU Environment`, `Retrieval Evaluation Metrics (Hit@K, MRR, Latency)`, `RRNCB Benchmark Dataset`, `fastembed dependency` (+4 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2123 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2127 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
+- **Why does `structural_chunk_text()` connect `structural_chunk_text` to `Document Ingestion Pipeline`?**
+  _High betweenness centrality (0.000) - this node is a cross-community bridge._
 - **Are the 8 inferred relationships involving `structural_chunk_text()` (e.g. with `test_empty_text()` and `test_fallback_character_split()`) actually correct?**
   _`structural_chunk_text()` has 8 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Best Run: user_bge_m3_c2048_hybrid_rerank`, `Docker Compose GPU Environment`, `Retrieval Evaluation Metrics (Hit@K, MRR, Latency)` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Docker Infrastructure Setup` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
+- **Should `Utility Functions & Helpers` be split into smaller, more focused modules?**
+  _Cohesion score 0.14153846153846153 - nodes in this community are weakly interconnected._
 - **Should `E5-BASE C1024 Hybrid Rerank Config` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
 - **Should `E5-BASE C256 Hybrid Rerank Config` be split into smaller, more focused modules?**
-  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
-- **Should `E5-BASE C512 Hybrid Rerank Config` be split into smaller, more focused modules?**
-  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
-- **Should `E5-LARGE C1024 Hybrid Rerank Config` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._

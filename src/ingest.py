@@ -7,19 +7,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import torch
-import yaml
-from fastembed import SparseTextEmbedding
-from pypdf import PdfReader
-from qdrant_client.models import (
-    Distance, Modifier, PointStruct, SparseVectorParams, VectorParams,
-)
+try:
+    import torch
+    import yaml
+    from fastembed import SparseTextEmbedding
+    from pypdf import PdfReader
+    from qdrant_client.models import (
+        Distance, Modifier, PointStruct, SparseVectorParams, VectorParams,
+    )
+except ImportError:
+    torch = None
+    yaml = None
+    SparseTextEmbedding = None
+    PdfReader = None
+    Distance = Modifier = PointStruct = SparseVectorParams = VectorParams = None
 
+from constants import (
+    DEFAULT_SEED,
+    DEFAULT_SPARSE_MODEL,
+    SPARSE_LANGUAGE,
+    UUID_NAMESPACE,
+)
 from paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL
 from splitters import naive_chunk_text, structural_chunk_text
 from utils import get_qdrant_client, load_dense_model, pick_device, set_seed
-
-UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 
 
 def make_point_id(source: str, page: int, chunk_id: int) -> str:
@@ -42,7 +53,7 @@ def main():
     args = parser.parse_args()
 
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
-    seed = cfg.get("meta", {}).get("seed", 42)
+    seed = cfg.get("meta", {}).get("seed", DEFAULT_SEED)
     set_seed(seed)
 
     ing = cfg["ingest"]
@@ -65,7 +76,7 @@ def main():
     device = pick_device(verbose=True)
     dense_model = load_dense_model(ing["embedding_model"], device=device)
     dense_dim = dense_model.get_embedding_dimension()
-    sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian")
+    sparse_model = SparseTextEmbedding(model_name=DEFAULT_SPARSE_MODEL, language=SPARSE_LANGUAGE)
 
     client = get_qdrant_client(QDRANT_URL)
     try:

@@ -18,4 +18,6 @@ EXPERIMENTS_DIR = Path(os.getenv("EXPERIMENTS_DIR", str(ROOT / "experiments")))
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
-EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))
+from constants import DEFAULT_EMBED_BATCH_SIZE
+
+EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", str(DEFAULT_EMBED_BATCH_SIZE)))

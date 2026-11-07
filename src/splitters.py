@@ -1,3 +1,6 @@
+from constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+
+
 def naive_chunk_text(text: str, size: int, overlap: int) -> list[str]:
     """
     Наивный посимвольный чанкинг (Baseline).
@@ -13,8 +16,8 @@ def naive_chunk_text(text: str, size: int, overlap: int) -> list[str]:
 
 def structural_chunk_text(
     text: str,
-    chunk_size: int = 512,
-    chunk_overlap: int = 64,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
     separators: list[str] | None = None,
 ) -> list[str]:
     if separators is None:

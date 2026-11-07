@@ -1,32 +1,46 @@
+from __future__ import annotations
+
 import os
 import random
+from typing import TYPE_CHECKING
 import numpy as np
-import torch
-from qdrant_client import QdrantClient
-from sentence_transformers import CrossEncoder, SentenceTransformer
+
+from constants import DEFAULT_MAX_SEQ_LENGTH, DEFAULT_SEED
+
+if TYPE_CHECKING:
+    from qdrant_client import QdrantClient
+    from sentence_transformers import CrossEncoder, SentenceTransformer
 
 
-def set_seed(seed: int = 42) -> None:
+def set_seed(seed: int = DEFAULT_SEED) -> None:
     """Фиксирует генераторы случайных чисел для воспроизводимости экспериментов."""
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    try:
+        import torch
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+    except ImportError:
+        pass
 
 
 def pick_device(verbose: bool = True) -> str:
     """Определяет доступное устройство (CUDA / CPU)."""
-    if torch.cuda.is_available():
-        if verbose:
-            name = torch.cuda.get_device_name(0)
-            vram = torch.cuda.get_device_properties(0).total_memory / 1e9
-            print(f"Device: cuda ({name}, {vram:.1f} GB VRAM)")
-        return "cuda"
+    try:
+        import torch
+        if torch.cuda.is_available():
+            if verbose:
+                name = torch.cuda.get_device_name(0)
+                vram = torch.cuda.get_device_properties(0).total_memory / 1e9
+                print(f"Device: cuda ({name}, {vram:.1f} GB VRAM)")
+            return "cuda"
+    except ImportError:
+        pass
     if verbose:
         print("Device: cpu")
     return "cpu"
@@ -34,6 +48,7 @@ def pick_device(verbose: bool = True) -> str:
 
 def get_qdrant_client(url: str) -> QdrantClient:
     """Создает клиент Qdrant без назойливых предупреждений о разнице минорных версий."""
+    from qdrant_client import QdrantClient
     return QdrantClient(url=url, check_compatibility=False)
 
 
@@ -44,6 +59,7 @@ def _fix_non_persistent_buffers(st_model: SentenceTransformer, device: str) -> N
     оказываются заполнены мусором после материализации с meta-device.
     """
     try:
+        import torch
         first_mod = st_model._first_module()
         auto_model = getattr(first_mod, "auto_model", None)
         if auto_model is None:
@@ -70,8 +86,14 @@ def _fix_non_persistent_buffers(st_model: SentenceTransformer, device: str) -> N
         print(f"[WARN] Не удалось проверить буферы модели: {e}")
 
 
-def load_dense_model(model_name: str, device: str | None = None, max_seq_length: int = 1024) -> SentenceTransformer:
+def load_dense_model(
+    model_name: str,
+    device: str | None = None,
+    max_seq_length: int = DEFAULT_MAX_SEQ_LENGTH,
+) -> SentenceTransformer:
     """Загружает SentenceTransformer с поддержкой кастомного кода и защитой буферов."""
+    from sentence_transformers import SentenceTransformer
+
     if device is None:
         device = pick_device(verbose=False)
 
@@ -91,6 +113,8 @@ def load_dense_model(model_name: str, device: str | None = None, max_seq_length:
 
 def load_reranker_model(model_name: str, device: str | None = None) -> CrossEncoder:
     """Загружает CrossEncoder на целевое устройство."""
+    from sentence_transformers import CrossEncoder
+
     if device is None:
         device = pick_device(verbose=False)
     return CrossEncoder(

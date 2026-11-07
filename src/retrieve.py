@@ -8,6 +8,14 @@ import yaml
 from fastembed import SparseTextEmbedding
 from qdrant_client import models
 
+from constants import (
+    DEFAULT_RERANKER_MODEL,
+    DEFAULT_RERANK_CANDIDATES,
+    DEFAULT_SEED,
+    DEFAULT_SPARSE_MODEL,
+    DEFAULT_VECTOR_NAME,
+    SPARSE_LANGUAGE,
+)
 from paths import CONFIGS_DIR, QDRANT_URL
 from utils import (
     get_qdrant_client,
@@ -16,8 +24,6 @@ from utils import (
     pick_device,
     set_seed,
 )
-
-DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
 
 
 def parse_args():
@@ -30,17 +36,17 @@ def parse_args():
 def main():
     args = parse_args()
     cfg = yaml.safe_load((CONFIGS_DIR / f"{args.config}.yaml").read_text(encoding="utf-8"))
-    set_seed(cfg.get("meta", {}).get("seed", 42))
+    set_seed(cfg.get("meta", {}).get("seed", DEFAULT_SEED))
 
     ing = cfg["ingest"]
     ret = cfg["retrieve"]
 
     query = " ".join(args.query) if args.query else "о чём этот документ?"
     top_k = ret["top_k"]
-    vector_name = ret.get("vector_name", "dense")
+    vector_name = ret.get("vector_name", DEFAULT_VECTOR_NAME)
     use_hybrid = ret.get("use_hybrid", False)
     use_rerank = ret.get("use_rerank", False)
-    rerank_candidates = ret.get("rerank_candidates", 20)
+    rerank_candidates = ret.get("rerank_candidates", DEFAULT_RERANK_CANDIDATES)
     reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
 
     device = pick_device(verbose=False)
@@ -53,7 +59,7 @@ def main():
     q_dense = dense_model.encode([q_dense_text], normalize_embeddings=True)[0].tolist()
 
     if use_hybrid:
-        sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian")
+        sparse_model = SparseTextEmbedding(model_name=DEFAULT_SPARSE_MODEL, language=SPARSE_LANGUAGE)
         q_sparse = list(sparse_model.embed([query]))[0]
         if len(q_sparse.indices) > 0:
             results = client.query_points(

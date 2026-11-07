@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from evaluate_retrieval import hit_at_k, rr, slugify
+from metrics import hit_at_k, rr, slugify
 
 
 def test_hit_at_k():

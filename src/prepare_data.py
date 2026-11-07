@@ -7,14 +7,8 @@ from pathlib import Path
 
 import requests
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data"
-DOCS_DIR = DATA_DIR / "docs"
-EVAL_DIR = DATA_DIR / "eval"
-
-HF_DATASET_URL = (
-    "https://huggingface.co/datasets/FractalGPT/RRNCBPublic/resolve/main/rrncb_public_dataset.csv"
-)
+from constants import HF_DATASET_URL
+from paths import DATA_DIR, DOCS_DIR, EVAL_DIR, ROOT
 
 CSV_PATH = EVAL_DIR / "dataset_sample.csv"
 OUT_PATH = EVAL_DIR / "questions.json"

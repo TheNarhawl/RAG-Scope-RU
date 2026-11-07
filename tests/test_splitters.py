@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from splitters import structural_chunk_text
+from splitters import naive_chunk_text, structural_chunk_text
 
 
 def test_empty_text():
@@ -85,3 +85,22 @@ def test_real_gost_simulation():
     assert result[0].startswith("Раздел 1.")
     assert any("Раздел 2. Нормативные ссылки" in r for r in result)
     assert any(r.startswith("Пункт 2.1.") for r in result)
+
+
+def test_naive_chunk_empty():
+    assert naive_chunk_text("", size=100, overlap=20) == []
+    assert naive_chunk_text("   ", size=100, overlap=20) == []
+
+
+def test_naive_chunk_short_text():
+    text = "Короткий текст"
+    assert naive_chunk_text(text, size=100, overlap=20) == [text]
+
+
+def test_naive_chunk_overlap():
+    text = "1234567890abcdefghij"
+    chunks = naive_chunk_text(text, size=10, overlap=2)
+    assert len(chunks) >= 2
+    assert chunks[0] == "1234567890"
+    # Следующий шаг start = 10 - 2 = 8
+    assert chunks[1] == "90abcdefgh"
