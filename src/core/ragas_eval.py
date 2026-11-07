@@ -13,7 +13,7 @@ for p in (str(SRC_DIR), str(ROOT)):
         sys.path.insert(0, p)
 
 from common.constants import DEFAULT_LLM_MODEL  # noqa: E402
-from common.utils import get_llm_client  # noqa: E402
+from common.utils import ensure_ragas_compatibility, get_llm_client  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,8 @@ def evaluate_ragas(
     """
     if not samples:
         return {}
+
+    ensure_ragas_compatibility()
 
     try:
         import numpy as np

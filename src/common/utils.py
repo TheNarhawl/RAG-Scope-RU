@@ -153,3 +153,25 @@ def get_llm_client(
     if url:
         return OpenAI(api_key=key, base_url=url)
     return OpenAI(api_key=key)
+
+
+def ensure_ragas_compatibility() -> None:
+    """
+    Устраняет несовместимость ragas 0.4.x с langchain-community >= 0.4,
+    при которой импорт langchain_community.chat_models.vertexai вызывает ModuleNotFoundError.
+    """
+    import sys
+    import types
+
+    target = "langchain_community.chat_models.vertexai"
+    if target not in sys.modules:
+        try:
+            __import__(target)
+        except ModuleNotFoundError:
+            shim_mod = types.ModuleType(target)
+            try:
+                from langchain_google_vertexai import ChatVertexAI
+                shim_mod.ChatVertexAI = ChatVertexAI
+            except ImportError:
+                shim_mod.ChatVertexAI = None
+            sys.modules[target] = shim_mod

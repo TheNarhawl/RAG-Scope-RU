@@ -8,9 +8,12 @@ SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from common.utils import ensure_ragas_compatibility  # noqa: E402
 from core.generator import format_rag_prompt, generate_rag_answer  # noqa: E402
 from core.ragas_eval import evaluate_ragas, prepare_ragas_dataset  # noqa: E402
 from pipelines.ingest import load_pdf_pages  # noqa: E402
+
+ensure_ragas_compatibility()
 
 
 def test_format_rag_prompt():
