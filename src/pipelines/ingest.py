@@ -120,11 +120,20 @@ def main():
     except Exception:
         print(f"Коллекции '{collection_name}' не было")
 
-    client.create_collection(
-        collection_name=collection_name,
-        vectors_config={vector_name: VectorParams(size=dense_dim, distance=Distance.COSINE)},
-        sparse_vectors_config={"sparse": SparseVectorParams(modifier=Modifier.IDF)},
-    )
+    try:
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config={vector_name: VectorParams(size=dense_dim, distance=Distance.COSINE)},
+            sparse_vectors_config={"sparse": SparseVectorParams(modifier=Modifier.IDF)},
+            timeout=60,
+        )
+    except Exception as e:
+        time.sleep(2)
+        try:
+            client.get_collection(collection_name)
+            print(f"Коллекция '{collection_name}' готова (создана после ожидания)")
+        except Exception:
+            raise e
     print(f"Коллекция '{collection_name}' создана (dense + sparse)\n")
 
     is_e5 = "e5" in ing["embedding_model"].lower()

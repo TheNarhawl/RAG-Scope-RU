@@ -55,10 +55,10 @@ def pick_device(verbose: bool = True) -> str:
     return "cpu"
 
 
-def get_qdrant_client(url: str) -> QdrantClient:
+def get_qdrant_client(url: str, timeout: int = 60) -> QdrantClient:
     """Создает клиент Qdrant без назойливых предупреждений о разнице минорных версий."""
     from qdrant_client import QdrantClient
-    return QdrantClient(url=url, check_compatibility=False)
+    return QdrantClient(url=url, timeout=timeout, check_compatibility=False)
 
 
 def _fix_non_persistent_buffers(st_model: SentenceTransformer, device: str) -> None:
