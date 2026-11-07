@@ -123,20 +123,28 @@ RAG-Scope-RU/
 │   └── eval/                   # dataset_sample.csv и questions.json
 ├── docker/
 │   ├── Dockerfile              # Образ Python + PyTorch CUDA
-│   ├── docker-compose.yml      # Сервисы App + Qdrant (GPU)
+│   └── docker-compose.yml      # Сервисы App + Qdrant (GPU)
+├── scripts/
 │   ├── reset-qdrant.ps1        # Полный сброс хранилища Qdrant
-│   └── restart-qdrant.ps1      # Мягкий перезапуск контейнера Qdrant
+│   ├── restart-qdrant.ps1      # Мягкий перезапуск контейнера Qdrant
+│   └── quickstart.txt          # Шпаргалка команд запуска
 ├── experiments/                # Результаты прогонов в JSON и сводный отчет
 │   └── RESULTS.md              # Актуальная таблица метрик всех экспериментов
 ├── notebooks/
 │   └── results.ipynb           # Аналитический Jupyter-ноутбук (лидерборд, Парето-фронт)
 ├── src/
+│   ├── constants.py            # Общие константы и параметры по умолчанию
+│   ├── evaluate_retrieval.py   # Пакетная оценка качества поиска на вопросах
+│   ├── ingest.py               # Чанкинг, расчет эмбеддингов, загрузка в Qdrant
+│   ├── metrics.py              # Формулы метрик (Hit@K, MRR)
 │   ├── paths.py                # Централизованные пути и переменные окружения
 │   ├── prepare_data.py         # Выкачка датасета с HF и PDF из архива
-│   ├── ingest.py               # Чанкинг, расчет эмбеддингов, загрузка в Qdrant
 │   ├── retrieve.py             # Инференс поиска (Dense / Hybrid / Rerank)
-│   ├── evaluate_retrieval.py   # Пакетная оценка качества поиска на вопросах
-│   └── summarize_experiments.py# Построение сводной Markdown-таблицы (настраиваемые колонки)
+│   ├── run_grid.py             # Оркестратор прогона координатной сетки
+│   ├── splitters.py            # Алгоритмы разбиения текста (naive / structural)
+│   ├── summarize_experiments.py# Построение сводной Markdown-таблицы (настраиваемые колонки)
+│   └── utils.py                # Общие утилиты (семена, выбор девайса, кэши)
+├── tests/                      # Юнит-тесты компонентов (pytest)
 ├── make_configs.py             # Автогенератор дерева конфигураций
 ├── requirements.txt            # Зависимости проекта
 └── README.md

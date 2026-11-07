@@ -1,5 +1,5 @@
 # Сносит контейнер и volume, поднимает Qdrant заново, ждёт готовности.
-# Запуск из корня проекта: .\docker\restart-qdrant.ps1
+# Запуск из корня проекта: .\scripts\reset-qdrant.ps1
 
 $ErrorActionPreference = "Stop"
 
