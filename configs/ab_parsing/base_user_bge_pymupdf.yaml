@@ -1,16 +1,14 @@
 meta:
-  name: ab-e5-pymupdf-c512
+  name: ab-parse-base_user_bge-pymupdf-c512
   seed: 42
   device: auto
 ingest:
-  embedding_model: intfloat/multilingual-e5-large
-  collection: ab_e5_c512_pymupdf
+  embedding_model: deepvk/USER-bge-m3
+  collection: ab_base_user_bge_c512_pymupdf
   chunk_size: 512
   chunk_overlap: 64
   chunk_strategy: structural
   parser: pymupdf4llm
-  passage_prefix: 'passage: '
-  query_prefix: 'query: '
 retrieve:
   top_k: 10
   vector_name: dense

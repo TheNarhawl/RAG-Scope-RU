@@ -77,6 +77,26 @@ python src/pipelines/evaluate.py --config e5_large/c512/hybrid-rerank --with-rag
 python src/pipelines/summarize_experiments.py
 ```
 
+### 5. Запуск A/B тестирования парсеров (pypdf vs pymupdf4llm)
+
+Сравнение качества извлечения на трех весовых категориях моделей (`rubert_tiny2`, `user_bge_m3`, `bge_m3`, `e5_large`):
+
+```bash
+# Быстрый A/B скрининг поиска (Hit@K, MRR)
+python src/pipelines/run_ab_experiment.py --group ab_parsing
+
+# A/B прогон со сквозной оценкой RAGAS
+python src/pipelines/run_ab_experiment.py --group ab_parsing --with-ragas --ragas-limit 20
+```
+
+### 6. Запуск в Google Colab
+
+Для воспроизведения экспериментов на GPU Tesla T4 подготовлен интерактивный блокнот [`notebooks/colab_runner.ipynb`](notebooks/colab_runner.ipynb):
+* Автономный старт сервера Qdrant без Docker
+* Подключение Google Drive для персистентного сохранения результатов (`/content/drive/MyDrive/RAG_Scope_Experiments`)
+* Распаковка корпуса `docs.zip` с Google Drive
+* Автоматический расчет дельты качества и интерактивные графики (`matplotlib`, `pandas`)
+
 ---
 
 ## Стек технологий

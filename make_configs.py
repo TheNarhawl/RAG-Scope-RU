@@ -222,48 +222,50 @@ def generate():
             sort_keys=False,
         )
 
-    # --- A/B тестирование парсеров PDF (pypdf vs pymupdf4llm) ---
+    # --- A/B тестирование парсеров PDF (pypdf vs pymupdf4llm) по весовым категориям ---
     ab_parse_dir = CONFIGS_DIR / "ab_parsing"
     ab_parse_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(ab_parse_dir / "e5_pypdf.yaml", "w", encoding="utf-8") as f:
-        yaml.dump(
-            {
-                "meta": {"name": "ab-e5-pypdf-c512", "seed": 42, "device": "auto"},
-                "ingest": {
-                    "embedding_model": "intfloat/multilingual-e5-large",
-                    "collection": "ab_e5_c512_pypdf",
-                    "chunk_size": 512,
-                    "chunk_overlap": 64,
-                    "chunk_strategy": "structural",
-                    "parser": "pypdf",
-                    "passage_prefix": "passage: ",
-                    "query_prefix": "query: ",
-                },
-                "retrieve": {
-                    "top_k": 10,
-                    "vector_name": "dense",
-                    "use_hybrid": True,
-                    "use_rerank": False,
-                },
-            },
-            f,
-            sort_keys=False,
-        )
+    ab_tiers = {
+        "small_rubert": {
+            "model": "cointegrated/rubert-tiny2",
+            "passage_prefix": "",
+            "query_prefix": "",
+        },
+        "base_user_bge": {
+            "model": "deepvk/USER-bge-m3",
+            "passage_prefix": "",
+            "query_prefix": "",
+        },
+        "large_bge_m3": {
+            "model": "BAAI/bge-m3",
+            "passage_prefix": "",
+            "query_prefix": "",
+        },
+        "large_e5": {
+            "model": "intfloat/multilingual-e5-large",
+            "passage_prefix": "passage: ",
+            "query_prefix": "query: ",
+        },
+    }
 
-    with open(ab_parse_dir / "e5_pymupdf.yaml", "w", encoding="utf-8") as f:
-        yaml.dump(
-            {
-                "meta": {"name": "ab-e5-pymupdf-c512", "seed": 42, "device": "auto"},
+    ab_parse_count = 0
+    for tier_key, tier_info in ab_tiers.items():
+        for parser in ["pypdf", "pymupdf4llm"]:
+            parser_alias = "pymupdf" if parser == "pymupdf4llm" else "pypdf"
+            cfg_name = f"{tier_key}_{parser_alias}"
+            run_name = f"ab-parse-{tier_key}-{parser_alias}-c512"
+            collection = f"ab_{tier_key}_c512_{parser_alias}"
+
+            cfg_dict = {
+                "meta": {"name": run_name, "seed": 42, "device": "auto"},
                 "ingest": {
-                    "embedding_model": "intfloat/multilingual-e5-large",
-                    "collection": "ab_e5_c512_pymupdf",
+                    "embedding_model": tier_info["model"],
+                    "collection": collection,
                     "chunk_size": 512,
                     "chunk_overlap": 64,
                     "chunk_strategy": "structural",
-                    "parser": "pymupdf4llm",
-                    "passage_prefix": "passage: ",
-                    "query_prefix": "query: ",
+                    "parser": parser,
                 },
                 "retrieve": {
                     "top_k": 10,
@@ -271,13 +273,21 @@ def generate():
                     "use_hybrid": True,
                     "use_rerank": False,
                 },
-            },
-            f,
-            sort_keys=False,
-        )
+            }
+            if tier_info["passage_prefix"]:
+                cfg_dict["ingest"]["passage_prefix"] = tier_info["passage_prefix"]
+            if tier_info["query_prefix"]:
+                cfg_dict["ingest"]["query_prefix"] = tier_info["query_prefix"]
+
+            out_yaml = ab_parse_dir / f"{cfg_name}.yaml"
+            out_yaml.write_text(
+                yaml.dump(cfg_dict, sort_keys=False, allow_unicode=True),
+                encoding="utf-8",
+            )
+            ab_parse_count += 1
 
     print(
-        f"Сгенерировано {count + 4} конфигов (включая A/B тесты) в {CONFIGS_DIR}"
+        f"Сгенерировано {count + 2 + ab_parse_count} конфигов (включая A/B тесты) в {CONFIGS_DIR}"
     )
 
 
