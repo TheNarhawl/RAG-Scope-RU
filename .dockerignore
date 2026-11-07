@@ -28,3 +28,5 @@ notebooks/
 README.md
 requirements.lock.txt
 project_dump.txt
+graphify-out/
+.pytest_cache/

@@ -18,6 +18,7 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 
 ENV DATA_DIR=/data \
-    EXPERIMENTS_DIR=/experiments
+    EXPERIMENTS_DIR=/experiments \
+    PYTHONPATH=/app/src:/app
 
 CMD ["python", "src/pipelines/ingest.py", "--help"]
