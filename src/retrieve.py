@@ -94,7 +94,7 @@ def main():
 
     if use_rerank and hits:
         reranker = load_reranker_model(reranker_model_name, device=device)
-        pairs = [(query, h.payload["text"]) for h in hits]
+        pairs = [(query, h.payload.get("text", "")) for h in hits if h.payload]
         scores = reranker.predict(pairs)
         ranked = sorted(zip(scores, hits), key=lambda x: x[0], reverse=True)
         final = [(s, h) for s, h in ranked[:top_k]]

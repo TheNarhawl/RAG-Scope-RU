@@ -16,6 +16,6 @@ EVAL_DIR = DATA_DIR / "eval"
 CONFIGS_DIR = ROOT / "configs"
 EXPERIMENTS_DIR = Path(os.getenv("EXPERIMENTS_DIR", str(ROOT / "experiments")))
 
-QDRANT_URL = os.environ["QDRANT_URL"]
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))

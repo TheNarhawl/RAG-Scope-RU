@@ -68,3 +68,8 @@ desktop.ini
 # ---------- Dump ----------
 code_dump.txt
 make_dump.py
+
+# ---------- Agents Logs ----------
+graphify-out/*
+!graphify-out/graph.html
+!graphify-out/GRAPH_REPORT.md
