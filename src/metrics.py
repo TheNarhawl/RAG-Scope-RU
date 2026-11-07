@@ -14,4 +14,3 @@ def rr(sources: list[str], target: str) -> float:
         if s == target:
             return 1.0 / i
     return 0.0
-

@@ -68,4 +68,3 @@ def test_build_markdown_with_runs():
     assert "14.2" in md
     assert "## Best run (по MRR)" in md
     assert "**Tag:** `run_test`" in md
-

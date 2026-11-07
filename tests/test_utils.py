@@ -31,4 +31,3 @@ def test_get_qdrant_client():
     pytest.importorskip("qdrant_client")
     client = get_qdrant_client("http://localhost:6333")
     assert client is not None
-

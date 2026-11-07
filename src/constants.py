@@ -27,4 +27,3 @@ UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 HF_DATASET_URL = (
     "https://huggingface.co/datasets/FractalGPT/RRNCBPublic/resolve/main/rrncb_public_dataset.csv"
 )
-

@@ -30,4 +30,3 @@ def test_make_point_id_valid_uuid5():
     res = make_point_id("gost_12345.pdf", page=10, chunk_id=3)
     parsed = uuid.UUID(res)
     assert parsed.version == 5
-
