@@ -139,3 +139,11 @@ def test_load_pdf_pages_parsers(tmp_path):
         pages = load_pdf_pages(dummy_pdf, parser="pypdf")
         assert len(pages) == 1
         assert pages[0] == (1, "Текст документа ГОСТ")
+
+    # Тестируем вызов pymupdf4llm с параметром use_ocr
+    with patch("pymupdf4llm.to_markdown") as mock_to_md:
+        mock_to_md.return_value = [{"metadata": {"page_number": 1}, "text": "# Заголовок\nДанные"}]
+        pages_mu = load_pdf_pages(dummy_pdf, parser="pymupdf4llm", use_ocr=False)
+        assert len(pages_mu) == 1
+        assert pages_mu[0] == (1, "# Заголовок\nДанные")
+        mock_to_md.assert_called_once_with(str(dummy_pdf), page_chunks=True, use_ocr=False)

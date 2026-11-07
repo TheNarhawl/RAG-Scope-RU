@@ -42,7 +42,11 @@ def make_point_id(source: str, page: int, chunk_id: int) -> str:
     return str(uuid.uuid5(UUID_NAMESPACE, f"{source}|p{page}|c{chunk_id}"))
 
 
-def load_pdf_pages(path: Path, parser: str = DEFAULT_PDF_PARSER) -> list[tuple[int, str]]:
+def load_pdf_pages(
+    path: Path,
+    parser: str = DEFAULT_PDF_PARSER,
+    use_ocr: bool = False,
+) -> list[tuple[int, str]]:
     """
     Загружает страницы PDF.
     Поддерживает парсеры:
@@ -52,7 +56,7 @@ def load_pdf_pages(path: Path, parser: str = DEFAULT_PDF_PARSER) -> list[tuple[i
     if parser in ("pymupdf", "pymupdf4llm", "fitz"):
         try:
             import pymupdf4llm
-            page_data = pymupdf4llm.to_markdown(str(path), page_chunks=True)
+            page_data = pymupdf4llm.to_markdown(str(path), page_chunks=True, use_ocr=use_ocr)
             pages = []
             for idx, item in enumerate(page_data, start=1):
                 p_num = item.get("metadata", {}).get("page_number", idx)
@@ -99,7 +103,8 @@ def main():
     print(f"Модель: {ing['embedding_model']}")
     print(f"Стратегия чанкинга: {chunk_strategy}")
     parser_name = ing.get("parser", DEFAULT_PDF_PARSER)
-    print(f"Парсер PDF: {parser_name}")
+    use_ocr = bool(ing.get("use_ocr", False))
+    print(f"Парсер PDF: {parser_name} (OCR: {use_ocr})")
     print(f"Чанк: {ing['chunk_size']} / overlap: {ing['chunk_overlap']}")
     print(f"Найдено PDF: {len(pdfs)}")
 
@@ -133,7 +138,7 @@ def main():
     for idx, pdf in enumerate(pdfs, start=1):
         pdf_start = time.time()
         points = []
-        for page_num, page_text in load_pdf_pages(pdf, parser=parser_name):
+        for page_num, page_text in load_pdf_pages(pdf, parser=parser_name, use_ocr=use_ocr):
             chunks = split_fn(page_text, ing["chunk_size"], ing["chunk_overlap"])
             for local_i, chunk in enumerate(chunks):
                 points.append({
