@@ -20,4 +20,4 @@ COPY configs/ ./configs/
 ENV DATA_DIR=/data \
     EXPERIMENTS_DIR=/experiments
 
-CMD ["python", "src/ingest.py", "--help"]
+CMD ["python", "src/pipelines/ingest.py", "--help"]

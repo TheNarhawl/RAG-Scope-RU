@@ -6,15 +6,19 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 try:
     import torch
     import yaml
     from fastembed import SparseTextEmbedding
     from qdrant_client import models
-    from paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
-    from utils import (
+    from common.paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
+    from common.utils import (
         get_qdrant_client,
         load_dense_model,
         load_reranker_model,
@@ -27,7 +31,7 @@ except ImportError:
     SparseTextEmbedding = None
     models = None
 
-from constants import (
+from common.constants import (  # noqa: E402
     DEFAULT_RERANKER_MODEL,
     DEFAULT_RERANK_CANDIDATES,
     DEFAULT_SEED,
@@ -36,7 +40,7 @@ from constants import (
     KS,
     SPARSE_LANGUAGE,
 )
-from metrics import hit_at_k, rr, slugify
+from core.metrics import hit_at_k, rr, slugify  # noqa: E402
 
 __all__ = ["hit_at_k", "rr", "slugify", "KS", "DEFAULT_RERANKER_MODEL"]
 
@@ -95,7 +99,7 @@ def main():
     info = client.get_collection(ing["collection"])
     print(f"Конфиг: {args.config} (seed={seed}, device={device})")
     print(f"Коллекция: {ing['collection']} ({info.points_count} точек)")
-    rerank_display = reranker_model_name if use_rerank else '—'
+    rerank_display = reranker_model_name if use_rerank else "—"
     print(f"Стратегия: {vector_name} | Hybrid: {use_hybrid} | Rerank: {use_rerank} ({rerank_display})")
     print(f"Вопросов: {len(questions)}\n")
 
@@ -187,13 +191,13 @@ def main():
         total_search_ms += (time.time() - t0_search) * 1000
 
         t0_rerank = time.time()
-        if use_rerank and hasattr(res, 'points') and res.points:
+        if use_rerank and hasattr(res, "points") and res.points:
             pairs = [(qt, h.payload["text"]) for h in res.points]
             scores = reranker.predict(pairs)
             ranked = sorted(zip(scores, res.points), key=lambda x: x[0], reverse=True)
             sources = [h.payload["source"] for _, h in ranked[:max_k]]
         else:
-            sources = [h.payload["source"] for h in (res.points if hasattr(res, 'points') else [])[:max_k]]
+            sources = [h.payload["source"] for h in (res.points if hasattr(res, "points") else [])[:max_k]]
         total_rerank_ms += (time.time() - t0_rerank) * 1000
 
         target = q["source_hint"]
@@ -224,8 +228,8 @@ def main():
         "latency_breakdown_ms": {
             "encode": avg_encode_ms,
             "search": avg_search_ms,
-            "rerank": avg_rerank_ms
-        }
+            "rerank": avg_rerank_ms,
+        },
     }
 
     print("=== Метрики ===")

@@ -5,7 +5,11 @@ import time
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 try:
     import torch
@@ -22,15 +26,15 @@ except ImportError:
     PdfReader = None
     Distance = Modifier = PointStruct = SparseVectorParams = VectorParams = None
 
-from constants import (
+from common.constants import (  # noqa: E402
     DEFAULT_SEED,
     DEFAULT_SPARSE_MODEL,
     SPARSE_LANGUAGE,
     UUID_NAMESPACE,
 )
-from paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL
-from splitters import naive_chunk_text, structural_chunk_text
-from utils import get_qdrant_client, load_dense_model, pick_device, set_seed
+from common.paths import CONFIGS_DIR, DOCS_DIR, EMBED_BATCH_SIZE, QDRANT_URL  # noqa: E402
+from common.utils import get_qdrant_client, load_dense_model, pick_device, set_seed  # noqa: E402
+from core.splitters import naive_chunk_text, structural_chunk_text  # noqa: E402
 
 
 def make_point_id(source: str, page: int, chunk_id: int) -> str:

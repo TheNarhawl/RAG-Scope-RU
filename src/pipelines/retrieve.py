@@ -2,13 +2,22 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-import yaml
-from fastembed import SparseTextEmbedding
-from qdrant_client import models
+try:
+    import yaml
+    from fastembed import SparseTextEmbedding
+    from qdrant_client import models
+except ImportError:
+    yaml = None
+    SparseTextEmbedding = None
+    models = None
 
-from constants import (
+from common.constants import (  # noqa: E402
     DEFAULT_RERANKER_MODEL,
     DEFAULT_RERANK_CANDIDATES,
     DEFAULT_SEED,
@@ -16,8 +25,8 @@ from constants import (
     DEFAULT_VECTOR_NAME,
     SPARSE_LANGUAGE,
 )
-from paths import CONFIGS_DIR, QDRANT_URL
-from utils import (
+from common.paths import CONFIGS_DIR, QDRANT_URL  # noqa: E402
+from common.utils import (  # noqa: E402
     get_qdrant_client,
     load_dense_model,
     load_reranker_model,

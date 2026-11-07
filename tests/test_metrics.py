@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from metrics import hit_at_k, rr, slugify
+from core.metrics import hit_at_k, rr, slugify  # noqa: E402
 
 
 def test_hit_at_k():

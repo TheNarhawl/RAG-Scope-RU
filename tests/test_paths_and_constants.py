@@ -4,10 +4,11 @@ import uuid
 from pathlib import Path
 
 # Добавляем src в sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-import constants  # noqa: E402
-import paths  # noqa: E402
+from common import constants, paths  # noqa: E402
 
 
 def test_constants_values():

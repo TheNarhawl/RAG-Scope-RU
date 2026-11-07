@@ -2,9 +2,11 @@ import sys
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from ingest import make_point_id  # noqa: E402
+from pipelines.ingest import make_point_id  # noqa: E402
 
 
 def test_make_point_id_determinism():

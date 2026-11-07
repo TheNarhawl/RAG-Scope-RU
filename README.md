@@ -35,12 +35,12 @@ cp .env.example .env
 
 ### 2. Подготовка данных
 
-Скрипт `src/prepare_data.py` в автоматическом режиме:
+Скрипт `src/pipelines/prepare_data.py` в автоматическом режиме:
 1. Выкачивает CSV-датасет RRNCB с Hugging Face и конвертирует его в `data/eval/questions.json`.
 2. Распаковывает корпус из 65 нормативных PDF-документов из архива `docs.zip` в `data/docs/`.
 
 ```bash
-python src/prepare_data.py
+python src/pipelines/prepare_data.py
 ```
 
 ### 3. Генерация матрицы конфигураций
@@ -57,21 +57,21 @@ python make_configs.py
 
 ```bash
 # Запуск всей сетки или фильтрация по конкретной модели (например, gte_multilingual или labse_ru)
-python src/run_grid.py --filter gte_multilingual
+python src/pipelines/run_grid.py --filter gte_multilingual
 
 # Индексация документов вручную (Dense + Sparse BM25 в Qdrant)
-python src/ingest.py --config e5_large/c512/dense
+python src/pipelines/ingest.py --config e5_large/c512/dense
 
 # Проверка поиска вручную
-python src/retrieve.py --config e5_large/c512/hybrid "срок исковой давности"
+python src/pipelines/retrieve.py --config e5_large/c512/hybrid "срок исковой давности"
 
 # Оценка метрик ранжирования (Hit@K, MRR, latency)
-python src/evaluate_retrieval.py --config e5_large/c512/dense
-python src/evaluate_retrieval.py --config e5_large/c512/hybrid
-python src/evaluate_retrieval.py --config e5_large/c512/hybrid-rerank
+python src/pipelines/evaluate.py --config e5_large/c512/dense
+python src/pipelines/evaluate.py --config e5_large/c512/hybrid
+python src/pipelines/evaluate.py --config e5_large/c512/hybrid-rerank
 
 # Сборка единого отчета по всем запускам в experiments/RESULTS.md
-python src/summarize_experiments.py
+python src/pipelines/summarize_experiments.py
 ```
 
 ---
@@ -133,17 +133,24 @@ RAG-Scope-RU/
 ├── notebooks/
 │   └── results.ipynb           # Аналитический Jupyter-ноутбук (лидерборд, Парето-фронт)
 ├── src/
-│   ├── constants.py            # Общие константы и параметры по умолчанию
-│   ├── evaluate_retrieval.py   # Пакетная оценка качества поиска на вопросах
-│   ├── ingest.py               # Чанкинг, расчет эмбеддингов, загрузка в Qdrant
-│   ├── metrics.py              # Формулы метрик (Hit@K, MRR)
-│   ├── paths.py                # Централизованные пути и переменные окружения
-│   ├── prepare_data.py         # Выкачка датасета с HF и PDF из архива
-│   ├── retrieve.py             # Инференс поиска (Dense / Hybrid / Rerank)
-│   ├── run_grid.py             # Оркестратор прогона координатной сетки
-│   ├── splitters.py            # Алгоритмы разбиения текста (naive / structural)
-│   ├── summarize_experiments.py# Построение сводной Markdown-таблицы (настраиваемые колонки)
-│   └── utils.py                # Общие утилиты (семена, выбор девайса, кэши)
+│   ├── __init__.py
+│   ├── common/                 # 1. Инфраструктурный и служебный слой
+│   │   ├── __init__.py
+│   │   ├── constants.py        # Константы (KS, дефолтные модели, сиды)
+│   │   ├── paths.py            # Централизованные пути и чтение .env
+│   │   └── utils.py            # Воспроизводимость, выбор девайса, кэши
+│   ├── core/                   # 2. Алгоритмическое ядро (чистая логика)
+│   │   ├── __init__.py
+│   │   ├── splitters.py        # Алгоритмы нарезки: naive и structural
+│   │   └── metrics.py          # Расчет Hit@K, MRR и вспомогательные функции
+│   └── pipelines/              # 3. Исполняемые сценарии (CLI / точки входа)
+│       ├── __init__.py
+│       ├── prepare_data.py     # Выкачка датасета с HF и PDF из архива
+│       ├── ingest.py           # Чанкинг, расчет эмбеддингов, загрузка в Qdrant
+│       ├── retrieve.py         # Инференс поиска (Dense / Hybrid / Rerank)
+│       ├── evaluate.py         # Пакетная оценка качества поиска на вопросах
+│       ├── run_grid.py         # Оркестратор прогона координатной сетки
+│       └── summarize_experiments.py # Построение сводной Markdown-таблицы
 ├── tests/                      # Юнит-тесты компонентов (pytest)
 ├── make_configs.py             # Автогенератор дерева конфигураций
 ├── requirements.txt            # Зависимости проекта
@@ -168,19 +175,19 @@ docker compose up -d qdrant
 docker compose build app
 
 # 3. Выкачать данные корпуса и вопросов внутри контейнера
-docker compose run --rm app python src/prepare_data.py
+docker compose run --rm app python src/pipelines/prepare_data.py
 
 # 4. Сгенерировать матрицу конфигов
 docker compose run --rm app python make_configs.py
 
 # 5. Проиндексировать выбранную связку
-docker compose run --rm app python src/ingest.py --config e5_large/c512/dense
+docker compose run --rm app python src/pipelines/ingest.py --config e5_large/c512/dense
 
 # 6. Запустить расчет метрик
-docker compose run --rm app python src/evaluate_retrieval.py --config e5_large/c512/hybrid
+docker compose run --rm app python src/pipelines/evaluate.py --config e5_large/c512/hybrid
 
 # 7. Сформировать сводку
-docker compose run --rm app python src/summarize_experiments.py
+docker compose run --rm app python src/pipelines/summarize_experiments.py
 
 # 8. Остановка окружения
 docker compose down
@@ -188,7 +195,7 @@ docker compose down
 
 ## Текущие результаты экспериментов
 
-Сводная таблица формируется автоматически скриптом `src/summarize_experiments.py` в файле `experiments/RESULTS.md`.
+Сводная таблица формируется автоматически скриптом `src/pipelines/summarize_experiments.py` в файле `experiments/RESULTS.md`.
 
 Сгенерировано: 2026-10-28 10:35:25
 

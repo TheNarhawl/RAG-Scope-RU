@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from splitters import naive_chunk_text, structural_chunk_text
+from core.splitters import naive_chunk_text, structural_chunk_text  # noqa: E402
 
 
 def test_empty_text():

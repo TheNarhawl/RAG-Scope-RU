@@ -3,15 +3,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-import yaml
-from paths import CONFIGS_DIR, EXPERIMENTS_DIR, QDRANT_URL
-from utils import get_qdrant_client
+import yaml  # noqa: E402
+from common.paths import CONFIGS_DIR, EXPERIMENTS_DIR, QDRANT_URL  # noqa: E402
+from common.utils import get_qdrant_client  # noqa: E402
+from core.metrics import slugify  # noqa: E402
 
-
-def slugify(s: str) -> str:
-    return s.lower().replace(" ", "_").replace("+", "").replace("-", "_")
+PIPELINES_DIR = Path(__file__).resolve().parent
 
 
 def is_already_done(collection: str, run_name: str) -> bool:
@@ -39,12 +42,16 @@ def main():
     parser.add_argument("--force", action="store_true", help="Пересчитать заново, даже если JSON уже есть")
     parser.add_argument(
         "--keep-collections", action="store_true",
-        help="Не удалять коллекцию из Qdrant после оценки группы"
+        help="Не удалять коллекцию из Qdrant после оценки группы",
     )
     args = parser.parse_args()
 
     chunk_dirs = sorted(p.parent for p in CONFIGS_DIR.rglob("dense.yaml") if p.parent != CONFIGS_DIR)
     failed_groups = []
+
+    ingest_script = str(PIPELINES_DIR / "ingest.py")
+    eval_script = str(PIPELINES_DIR / "evaluate.py")
+    summary_script = str(PIPELINES_DIR / "summarize_experiments.py")
 
     for c_dir in chunk_dirs:
         rel_dir = c_dir.relative_to(CONFIGS_DIR).as_posix()
@@ -74,19 +81,19 @@ def main():
                 print(f"[ИНДЕКС ГОТОВ] Коллекция '{collection}' уже заполнена в Qdrant, пропускаем ingest.py.")
             else:
                 subprocess.run(
-                    [sys.executable, "src/ingest.py", "--config", f"{rel_dir}/dense"],
+                    [sys.executable, ingest_script, "--config", f"{rel_dir}/dense"],
                     check=True,
                 )
 
             # 2. Оценка стратегий
             for strat in strats_to_run:
                 subprocess.run(
-                    [sys.executable, "src/evaluate_retrieval.py", "--config", f"{rel_dir}/{strat}"],
+                    [sys.executable, eval_script, "--config", f"{rel_dir}/{strat}"],
                     check=True,
                 )
 
             # 3. Обновление сводной таблицы RESULTS.md
-            subprocess.run([sys.executable, "src/summarize_experiments.py"], check=True)
+            subprocess.run([sys.executable, summary_script], check=True)
 
             # 4. Освобождаем память в Qdrant
             if not args.keep_collections:

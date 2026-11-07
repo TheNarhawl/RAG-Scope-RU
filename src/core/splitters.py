@@ -1,4 +1,14 @@
-from constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+import sys
+from pathlib import Path
+
+# Ensure 'src' and ROOT are on sys.path
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from common.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE  # noqa: E402
 
 
 def naive_chunk_text(text: str, size: int, overlap: int) -> list[str]:
@@ -50,7 +60,7 @@ def structural_chunk_text(
             break
         if sep in text:
             chosen_sep = sep
-            next_separators = separators[i + 1 :]
+            next_separators = separators[i + 1:]
             break
 
     # Разбиваем по выбранному разделителю с сохранением контекстных маркеров

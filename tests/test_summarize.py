@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from summarize_experiments import (  # noqa: E402
+from pipelines.summarize_experiments import (  # noqa: E402
     build_markdown,
     fmt_any,
     fmt_float,

@@ -2,10 +2,19 @@ from __future__ import annotations
 
 import os
 import random
+import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 import numpy as np
 
-from constants import DEFAULT_MAX_SEQ_LENGTH, DEFAULT_SEED
+# Ensure sys.path contains src and ROOT
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from common.constants import DEFAULT_MAX_SEQ_LENGTH, DEFAULT_SEED  # noqa: E402
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient

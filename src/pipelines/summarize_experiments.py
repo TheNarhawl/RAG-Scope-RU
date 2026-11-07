@@ -3,9 +3,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-from paths import EXPERIMENTS_DIR
+from common.paths import EXPERIMENTS_DIR  # noqa: E402
 
 OUT_PATH = EXPERIMENTS_DIR / "RESULTS.md"
 

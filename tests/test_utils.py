@@ -4,9 +4,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from utils import get_qdrant_client, pick_device, set_seed  # noqa: E402
+from common.utils import get_qdrant_client, pick_device, set_seed  # noqa: E402
 
 
 def test_set_seed_reproducibility():

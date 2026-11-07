@@ -2,13 +2,20 @@ import argparse
 import csv
 import json
 import shutil
+import sys
 import zipfile
 from pathlib import Path
 
 import requests
 
-from constants import HF_DATASET_URL
-from paths import DATA_DIR, DOCS_DIR, EVAL_DIR, ROOT
+ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = ROOT / "src"
+for p in (str(SRC_DIR), str(ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from common.constants import HF_DATASET_URL  # noqa: E402
+from common.paths import DATA_DIR, DOCS_DIR, EVAL_DIR  # noqa: E402
 
 CSV_PATH = EVAL_DIR / "dataset_sample.csv"
 OUT_PATH = EVAL_DIR / "questions.json"
@@ -28,7 +35,7 @@ def download_eval_dataset():
 
 
 def convert_questions():
-    """Конвертирует CSV в формат questions.json для evaluate_retrieval.py."""
+    """Конвертирует CSV в формат questions.json для evaluate.py."""
     if not CSV_PATH.exists():
         raise FileNotFoundError(f"Файл {CSV_PATH} не найден. Сначала скачайте датасет.")
 
