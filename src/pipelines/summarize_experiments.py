@@ -26,8 +26,9 @@ COLUMNS_CONFIG = {
     "Hit@5": True,
     "Hit@10": True,
     "MRR": True,
-    "Faithful": False,
-    "AnsCorr": False,
+    "Faithful": True,
+    "AnsCorr": True,
+    "CntxRec": True,
     "ms/q": True,
     "Timestamp": False,
 }
@@ -64,6 +65,7 @@ def load_runs() -> list[dict]:
             "ms_per_query": summary.get("ms_per_query"),
             "faithfulness": ragas.get("faithfulness"),
             "answer_correctness": ragas.get("answer_correctness"),
+            "context_recall": ragas.get("context_recall"),
         })
     return runs
 
@@ -109,8 +111,9 @@ COLUMN_EXTRACTORS = [
     ("Hit@5", lambda r, i: fmt_float(r["hit@5"])),
     ("Hit@10", lambda r, i: fmt_float(r["hit@10"])),
     ("MRR", lambda r, i: fmt_float(r["mrr"])),
-    ("Faithful", lambda r, i: fmt_float(r["faithfulness"])),
-    ("AnsCorr", lambda r, i: fmt_float(r["answer_correctness"])),
+    ("Faithful", lambda r, i: fmt_float(r.get("faithfulness"))),
+    ("AnsCorr", lambda r, i: fmt_float(r.get("answer_correctness"))),
+    ("CntxRec", lambda r, i: fmt_float(r.get("context_recall"))),
     ("ms/q", lambda r, i: fmt_ms(r["ms_per_query"])),
     ("Timestamp", lambda r, i: fmt_any(r["timestamp"])),
 ]
@@ -147,12 +150,21 @@ def build_markdown(runs: list[dict]) -> str:
         assert len(cells) == len(headers), f"Строка {i}: {len(cells)} ячеек вместо {len(headers)}"
         lines.append("| " + " | ".join(cells) + " |")
 
-    ragas_active = COLUMNS_CONFIG.get("Faithful", True) or COLUMNS_CONFIG.get("AnsCorr", True)
-    has_ragas = any(r["faithfulness"] is not None for r in runs_sorted)
+    ragas_active = (
+        COLUMNS_CONFIG.get("Faithful", True)
+        or COLUMNS_CONFIG.get("AnsCorr", True)
+        or COLUMNS_CONFIG.get("CntxRec", True)
+    )
+    has_ragas = any(
+        r["faithfulness"] is not None
+        or r["answer_correctness"] is not None
+        or r.get("context_recall") is not None
+        for r in runs_sorted
+    )
     if ragas_active and not has_ragas:
         lines.append(
-            "\nFaithful и AnsCorr (RAGAS) появятся после подключения оценки "
-            "генерации через LLM + RAGAS.\n"
+            "\nFaithful, AnsCorr и CntxRec (RAGAS) появятся после запуска "
+            "оценки с флагом --with-ragas.\n"
         )
 
     valid = [r for r in runs_sorted if r["mrr"] is not None]

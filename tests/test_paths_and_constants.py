@@ -26,6 +26,13 @@ def test_constants_values():
     assert constants.KS == [1, 3, 5, 10]
     assert isinstance(constants.UUID_NAMESPACE, uuid.UUID)
     assert constants.HF_DATASET_URL.startswith("https://")
+    assert constants.DEFAULT_PDF_PARSER == "pypdf"
+    assert constants.DEFAULT_LLM_MODEL == "deepseek-chat"
+    assert "faithfulness" in constants.RAGAS_METRICS
+    assert "answer_correctness" in constants.RAGAS_METRICS
+    assert "context_recall" in constants.RAGAS_METRICS
+    assert "{context}" in constants.DEFAULT_RAG_PROMPT
+    assert "{question}" in constants.DEFAULT_RAG_PROMPT
 
 
 def test_paths_types_and_defaults():

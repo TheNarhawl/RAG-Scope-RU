@@ -12,3 +12,7 @@ matplotlib
 rank-bm25>=0.2,<0.3
 gdown>=6.4.2
 requests>=2.31.0
+pymupdf>=1.24.0
+pymupdf4llm>=0.0.17
+ragas>=0.2.0
+openai>=1.0.0

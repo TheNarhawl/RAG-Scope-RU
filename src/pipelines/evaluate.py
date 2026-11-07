@@ -17,14 +17,26 @@ try:
     import yaml
     from fastembed import SparseTextEmbedding
     from qdrant_client import models
-    from common.paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
+    from common.paths import (
+        CONFIGS_DIR,
+        EVAL_DIR,
+        EXPERIMENTS_DIR,
+        OPENAI_API_KEY,
+        OPENAI_BASE_URL,
+        QDRANT_URL,
+        RAGAS_LLM_MODEL,
+    )
     from common.utils import (
+        get_llm_client,
         get_qdrant_client,
         load_dense_model,
         load_reranker_model,
         pick_device,
         set_seed,
     )
+    from core.generator import generate_rag_answer
+    from core.metrics import hit_at_k, rr, slugify
+    from core.ragas_eval import evaluate_ragas
 except ImportError:
     torch = None
     yaml = None
@@ -32,6 +44,7 @@ except ImportError:
     models = None
 
 from common.constants import (  # noqa: E402
+    DEFAULT_LLM_MODEL,
     DEFAULT_RERANKER_MODEL,
     DEFAULT_RERANK_CANDIDATES,
     DEFAULT_SEED,
@@ -40,7 +53,6 @@ from common.constants import (  # noqa: E402
     KS,
     SPARSE_LANGUAGE,
 )
-from core.metrics import hit_at_k, rr, slugify  # noqa: E402
 
 __all__ = ["hit_at_k", "rr", "slugify", "KS", "DEFAULT_RERANKER_MODEL"]
 
@@ -50,6 +62,22 @@ def parse_args():
     p.add_argument("--tag", default=None)
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--config", default="baseline")
+    p.add_argument(
+        "--with-ragas",
+        action="store_true",
+        help="Запустить Stage 2 (генерация LLM + метрики RAGAS)",
+    )
+    p.add_argument(
+        "--ragas-limit",
+        type=int,
+        default=None,
+        help="Ограничение числа вопросов для RAGAS (экономия токенов)",
+    )
+    p.add_argument(
+        "--llm-model",
+        default=None,
+        help="Модель LLM для генерации и RAGAS (по умолчанию deepseek-chat)",
+    )
     return p.parse_args()
 
 
@@ -67,6 +95,7 @@ def main():
     use_rerank = ret.get("use_rerank", False)
     rerank_candidates = ret.get("rerank_candidates", DEFAULT_RERANK_CANDIDATES)
     reranker_model_name = ret.get("reranker_model", DEFAULT_RERANKER_MODEL)
+    llm_model = args.llm_model or RAGAS_LLM_MODEL or DEFAULT_LLM_MODEL
 
     max_k = max(KS)
     search_limit = max(rerank_candidates, max_k) if use_rerank else max_k
@@ -195,13 +224,25 @@ def main():
             pairs = [(qt, h.payload["text"]) for h in res.points]
             scores = reranker.predict(pairs)
             ranked = sorted(zip(scores, res.points), key=lambda x: x[0], reverse=True)
-            sources = [h.payload["source"] for _, h in ranked[:max_k]]
+            selected_points = [h for _, h in ranked[:max_k]]
         else:
-            sources = [h.payload["source"] for h in (res.points if hasattr(res, "points") else [])[:max_k]]
+            selected_points = (res.points if hasattr(res, "points") else [])[:max_k]
+
+        sources = [h.payload["source"] for h in selected_points]
+        retrieved_texts = [
+            h.payload["text"] for h in selected_points if "text" in h.payload
+        ]
         total_rerank_ms += (time.time() - t0_rerank) * 1000
 
         target = q["source_hint"]
-        row = {"id": q["id"], "question": qt, "target": target, "retrieved": sources}
+        row = {
+            "id": q["id"],
+            "question": qt,
+            "target": target,
+            "ground_truth": q.get("ground_truth", ""),
+            "retrieved": sources,
+            "retrieved_texts": retrieved_texts,
+        }
         for k in KS:
             h = hit_at_k(sources, target, k)
             hits[k] += h
@@ -219,6 +260,45 @@ def main():
     avg_rerank_ms = total_rerank_ms / n if use_rerank else 0.0
     avg_total_ms = avg_encode_ms + avg_search_ms + avg_rerank_ms
 
+    ragas_summary = {}
+    ragas_raw = []
+    if args.with_ragas:
+        print("\n=== Stage 2: Генерация ответов и оценка RAGAS ===")
+        ragas_questions = per_q[: args.ragas_limit] if args.ragas_limit else per_q
+        print(f"Оценка на {len(ragas_questions)} вопросах (LLM: {llm_model})...")
+
+        llm_client = get_llm_client(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+        ragas_samples = []
+
+        for idx, item in enumerate(ragas_questions, start=1):
+            q_text = item["question"]
+            ctxs = item["retrieved_texts"]
+            gt = item["ground_truth"]
+            print(f"[{idx}/{len(ragas_questions)}] Генерация: {q_text[:50]}...")
+            gen_ans = generate_rag_answer(
+                question=q_text,
+                contexts=ctxs,
+                client=llm_client,
+                model=llm_model,
+            )
+            item["generated_answer"] = gen_ans
+            ragas_samples.append({
+                "question": q_text,
+                "answer": gen_ans,
+                "contexts": ctxs,
+                "ground_truth": gt,
+            })
+
+        print("Вычисление метрик RAGAS (faithfulness, answer_correctness, context_recall)...")
+        ragas_result = evaluate_ragas(
+            samples=ragas_samples,
+            client=llm_client,
+            model=llm_model,
+            show_progress=True,
+        )
+        ragas_summary = ragas_result.get("summary", {})
+        ragas_raw = ragas_result.get("raw", [])
+
     summary = {
         "n_questions": n,
         "hit_rate": {f"@{k}": hits[k] / n for k in KS},
@@ -231,8 +311,10 @@ def main():
             "rerank": avg_rerank_ms,
         },
     }
+    if ragas_summary:
+        summary["ragas"] = ragas_summary
 
-    print("=== Метрики ===")
+    print("\n=== Метрики ===")
     for k in KS:
         print(f"  Hit Rate@{k}: {summary['hit_rate'][f'@{k}']:.3f}")
     print(f"  MRR:         {summary['mrr']:.3f}")
@@ -241,6 +323,15 @@ def main():
     print(f"    - Search:    {avg_search_ms:.1f} мс/q")
     if use_rerank:
         print(f"    - Rerank:    {avg_rerank_ms:.1f} мс/q")
+
+    if ragas_summary:
+        print("=== RAGAS Метрики ===")
+        if "faithfulness" in ragas_summary:
+            print(f"  Faithfulness:       {ragas_summary['faithfulness']:.3f}")
+        if "answer_correctness" in ragas_summary:
+            print(f"  Answer Correctness: {ragas_summary['answer_correctness']:.3f}")
+        if "context_recall" in ragas_summary:
+            print(f"  Context Recall:     {ragas_summary['context_recall']:.3f}")
     print("")
 
     tag = args.tag or slugify(cfg["meta"]["name"])
@@ -249,15 +340,19 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"metrics_{tag}_{ts}.json"
 
+    payload_to_save = {
+        "config": cfg,
+        "tag": tag,
+        "timestamp": ts,
+        "summary": summary,
+        "per_question": per_q,
+    }
+    if ragas_raw:
+        payload_to_save["ragas_raw"] = ragas_raw
+
     out_path.write_text(
         json.dumps(
-            {
-                "config": cfg,
-                "tag": tag,
-                "timestamp": ts,
-                "summary": summary,
-                "per_question": per_q,
-            },
+            payload_to_save,
             ensure_ascii=False,
             indent=2,
         ),

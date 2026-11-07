@@ -27,3 +27,22 @@ UUID_NAMESPACE = uuid.UUID("6f2a3b1c-4d5e-4f6a-8b7c-9d0e1f2a3b4c")
 HF_DATASET_URL = (
     "https://huggingface.co/datasets/FractalGPT/RRNCBPublic/resolve/main/rrncb_public_dataset.csv"
 )
+
+# --- Парсинг документов ---
+DEFAULT_PDF_PARSER = "pypdf"
+
+# --- RAGAS и генерация ответов ---
+DEFAULT_LLM_MODEL = "deepseek-chat"
+RAGAS_METRICS = ["faithfulness", "answer_correctness", "context_recall"]
+
+DEFAULT_RAG_PROMPT = (
+    "Вы — экспертный аналитический ассистент по нормативно-технической и "
+    "строительной документации РФ (ГОСТ, СНиП, СП).\n"
+    "Ответьте на вопрос пользователя, опираясь ИСКЛЮЧИТЕЛЬНО на предоставленный контекст.\n"
+    "Если контекст не содержит ответа или информации недостаточно, прямо укажите: "
+    '"Информация в предоставленных документах отсутствует."\n'
+    "Не придумывайте факты, числовые параметры и требования от себя. Будьте точны и кратки.\n\n"
+    "Контекст:\n{context}\n\n"
+    "Вопрос: {question}\n\n"
+    "Ответ:"
+)

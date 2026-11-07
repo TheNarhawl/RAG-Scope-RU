@@ -65,10 +65,13 @@ python src/pipelines/ingest.py --config e5_large/c512/dense
 # Проверка поиска вручную
 python src/pipelines/retrieve.py --config e5_large/c512/hybrid "срок исковой давности"
 
-# Оценка метрик ранжирования (Hit@K, MRR, latency)
+# Оценка метрик ранжирования (Stage 1: Hit@K, MRR, latency)
 python src/pipelines/evaluate.py --config e5_large/c512/dense
 python src/pipelines/evaluate.py --config e5_large/c512/hybrid
 python src/pipelines/evaluate.py --config e5_large/c512/hybrid-rerank
+
+# Оценка качества генерации (Stage 2: RAGAS Faithfulness, AnsCorr, Context Recall)
+python src/pipelines/evaluate.py --config e5_large/c512/hybrid-rerank --with-ragas --ragas-limit 20
 
 # Сборка единого отчета по всем запускам в experiments/RESULTS.md
 python src/pipelines/summarize_experiments.py
@@ -84,13 +87,12 @@ python src/pipelines/summarize_experiments.py
 - **Sparse Embeddings (BM25):** `fastembed` с поддержкой русской морфологии
 - **Гибридный поиск:** Qdrant Prefetch + RRF (`FusionQuery`) с защитой от пустых разреженных векторов
 - **Reranker:** Cross-Encoder (`BAAI/bge-reranker-v2-m3`, `BAAI/bge-reranker-base`)
-- **Парсинг и чанкинг:** `pypdf`, структурный и наивный сплиттеры с настраиваемым overlap
+- **Парсинг и чанкинг:** `pypdf` и `pymupdf4llm` (извлечение Markdown заголовков и таблиц), структурный и наивный сплиттеры с настраиваемым overlap
+- **Генеративный контур и оценка RAGAS:**
+  - Генерация контекстно-зависимых ответов (`src/core/generator.py`) через OpenAI-совместимый API (DeepSeek, OpenRouter, vLLM, Ollama)
+  - Триада метрик RAGAS (`src/core/ragas_eval.py`): **Faithfulness**, **Answer Correctness**, **Context Recall**
+  - Двухэтапная стратегия валидации (Stage 1: быстрый скрининг 160 конфигураций; Stage 2: точечный замер лидеров Парето-фронта)
 - **Инфраструктура:** Фиксация сидов для воспроизводимости, автоматический обход багов `transformers >= 5.0` (восстановление неперсистентных буферов RoPE и `position_ids`), скрипты обслуживания Qdrant через PowerShell
-
-**В разработке:**
-- Генеративный контур (генерация ответа через Ollama / Gemini API)
-- Сквозная оценка генерации по методологии RAGAS (Faithfulness, Answer Correctness)
-- Мульти-LLM судейство (LLM-as-a-Judge)
 
 ---
 

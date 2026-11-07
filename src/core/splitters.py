@@ -32,6 +32,11 @@ def structural_chunk_text(
 ) -> list[str]:
     if separators is None:
         separators = [
+            "\n# ",
+            "\n## ",
+            "\n### ",
+            "\n#### ",
+            "\n| ",
             "\nРаздел ",
             "\nГлава ",
             "\nСтатья ",

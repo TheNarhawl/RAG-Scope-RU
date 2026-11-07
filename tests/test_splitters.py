@@ -106,3 +106,31 @@ def test_naive_chunk_overlap():
     assert chunks[0] == "1234567890"
     # Следующий шаг start = 10 - 2 = 8
     assert chunks[1] == "90abcdefgh"
+
+
+def test_markdown_header_splitting():
+    """Проверка разбиения по Markdown-заголовкам (#, ##, ###) от pymupdf4llm."""
+    text = (
+        "# Заголовок 1\nТекст первой секции стандарта.\n"
+        "## Подраздел 1.1\nДетализированные требования.\n"
+        "### Пункт 1.1.1\nКонкретные числовые параметры."
+    )
+    result = structural_chunk_text(text, chunk_size=55, chunk_overlap=0)
+    assert len(result) >= 3
+    assert result[0].startswith("# Заголовок 1")
+    assert any(r.startswith("## Подраздел 1.1") for r in result)
+    assert any("### Пункт 1.1.1" in r for r in result)
+
+
+def test_markdown_table_splitting():
+    """Проверка сохранения структуры Markdown-таблиц."""
+    text = (
+        "# Таблица параметров\n"
+        "| Параметр | Значение |\n"
+        "| --- | --- |\n"
+        "| Давление | 10 МПа |\n"
+        "| Температура | 250 C |"
+    )
+    result = structural_chunk_text(text, chunk_size=200, chunk_overlap=0)
+    assert len(result) == 1
+    assert "| Параметр | Значение |" in result[0]

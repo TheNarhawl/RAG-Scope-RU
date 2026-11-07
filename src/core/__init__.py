@@ -1,1 +1,1 @@
-"""Algorithmic core (splitters, metrics)."""
+"""Algorithmic core (splitters, metrics, generator, ragas_eval)."""

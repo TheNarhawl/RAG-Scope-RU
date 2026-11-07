@@ -166,11 +166,11 @@ def generate():
                 )
                 count += 1
 
-    ab_dir = CONFIGS_DIR / "ab_chunking"
-    ab_dir.mkdir(parents=True, exist_ok=True)
+    # --- A/B тестирование стратегий нарезки (Chunking) ---
+    ab_chunk_dir = CONFIGS_DIR / "ab_chunking"
+    ab_chunk_dir.mkdir(parents=True, exist_ok=True)
 
-    # e5_naive
-    with open(ab_dir / "e5_naive.yaml", "w", encoding="utf-8") as f:
+    with open(ab_chunk_dir / "e5_naive.yaml", "w", encoding="utf-8") as f:
         yaml.dump(
             {
                 "meta": {"name": "ab-e5-naive-c512", "seed": 42, "device": "auto"},
@@ -194,8 +194,7 @@ def generate():
             sort_keys=False,
         )
 
-    # e5_structural
-    with open(ab_dir / "e5_structural.yaml", "w", encoding="utf-8") as f:
+    with open(ab_chunk_dir / "e5_structural.yaml", "w", encoding="utf-8") as f:
         yaml.dump(
             {
                 "meta": {
@@ -223,8 +222,62 @@ def generate():
             sort_keys=False,
         )
 
+    # --- A/B тестирование парсеров PDF (pypdf vs pymupdf4llm) ---
+    ab_parse_dir = CONFIGS_DIR / "ab_parsing"
+    ab_parse_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(ab_parse_dir / "e5_pypdf.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(
+            {
+                "meta": {"name": "ab-e5-pypdf-c512", "seed": 42, "device": "auto"},
+                "ingest": {
+                    "embedding_model": "intfloat/multilingual-e5-large",
+                    "collection": "ab_e5_c512_pypdf",
+                    "chunk_size": 512,
+                    "chunk_overlap": 64,
+                    "chunk_strategy": "structural",
+                    "parser": "pypdf",
+                    "passage_prefix": "passage: ",
+                    "query_prefix": "query: ",
+                },
+                "retrieve": {
+                    "top_k": 10,
+                    "vector_name": "dense",
+                    "use_hybrid": True,
+                    "use_rerank": False,
+                },
+            },
+            f,
+            sort_keys=False,
+        )
+
+    with open(ab_parse_dir / "e5_pymupdf.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(
+            {
+                "meta": {"name": "ab-e5-pymupdf-c512", "seed": 42, "device": "auto"},
+                "ingest": {
+                    "embedding_model": "intfloat/multilingual-e5-large",
+                    "collection": "ab_e5_c512_pymupdf",
+                    "chunk_size": 512,
+                    "chunk_overlap": 64,
+                    "chunk_strategy": "structural",
+                    "parser": "pymupdf4llm",
+                    "passage_prefix": "passage: ",
+                    "query_prefix": "query: ",
+                },
+                "retrieve": {
+                    "top_k": 10,
+                    "vector_name": "dense",
+                    "use_hybrid": True,
+                    "use_rerank": False,
+                },
+            },
+            f,
+            sort_keys=False,
+        )
+
     print(
-        f"Сгенерировано {count + 2} конфигов (включая A/B тесты) в {CONFIGS_DIR}"
+        f"Сгенерировано {count + 4} конфигов (включая A/B тесты) в {CONFIGS_DIR}"
     )
 
 

@@ -27,6 +27,7 @@ except ImportError:
     Distance = Modifier = PointStruct = SparseVectorParams = VectorParams = None
 
 from common.constants import (  # noqa: E402
+    DEFAULT_PDF_PARSER,
     DEFAULT_SEED,
     DEFAULT_SPARSE_MODEL,
     SPARSE_LANGUAGE,
@@ -41,7 +42,30 @@ def make_point_id(source: str, page: int, chunk_id: int) -> str:
     return str(uuid.uuid5(UUID_NAMESPACE, f"{source}|p{page}|c{chunk_id}"))
 
 
-def load_pdf_pages(path: Path) -> list[tuple[int, str]]:
+def load_pdf_pages(path: Path, parser: str = DEFAULT_PDF_PARSER) -> list[tuple[int, str]]:
+    """
+    Загружает страницы PDF.
+    Поддерживает парсеры:
+    - 'pypdf': быстрый стандартный построчный экстрактор
+    - 'pymupdf' / 'pymupdf4llm': расширенный экстрактор с Markdown-разметкой заголовков и таблиц
+    """
+    if parser in ("pymupdf", "pymupdf4llm", "fitz"):
+        try:
+            import pymupdf4llm
+            page_data = pymupdf4llm.to_markdown(str(path), page_chunks=True)
+            pages = []
+            for idx, item in enumerate(page_data, start=1):
+                p_num = item.get("metadata", {}).get("page_number", idx)
+                text = (item.get("text") or "").strip()
+                if text:
+                    pages.append((int(p_num), text))
+            if pages:
+                return pages
+        except Exception as e:
+            print(f"[WARN] Ошибка pymupdf4llm для {path.name}: {e}. Откат на pypdf.")
+
+    # По умолчанию / fallback: pypdf
+    from pypdf import PdfReader
     reader = PdfReader(str(path))
     pages = []
     for i, page in enumerate(reader.pages, start=1):
@@ -74,6 +98,8 @@ def main():
     print(f"Коллекция: {collection_name}")
     print(f"Модель: {ing['embedding_model']}")
     print(f"Стратегия чанкинга: {chunk_strategy}")
+    parser_name = ing.get("parser", DEFAULT_PDF_PARSER)
+    print(f"Парсер PDF: {parser_name}")
     print(f"Чанк: {ing['chunk_size']} / overlap: {ing['chunk_overlap']}")
     print(f"Найдено PDF: {len(pdfs)}")
 
@@ -107,7 +133,7 @@ def main():
     for idx, pdf in enumerate(pdfs, start=1):
         pdf_start = time.time()
         points = []
-        for page_num, page_text in load_pdf_pages(pdf):
+        for page_num, page_text in load_pdf_pages(pdf, parser=parser_name):
             chunks = split_fn(page_text, ing["chunk_size"], ing["chunk_overlap"])
             for local_i, chunk in enumerate(chunks):
                 points.append({

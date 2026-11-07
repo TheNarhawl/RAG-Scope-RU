@@ -59,6 +59,7 @@ def test_build_markdown_with_runs():
             "ms_per_query": 14.2,
             "faithfulness": None,
             "answer_correctness": None,
+            "context_recall": None,
         }
     ]
 

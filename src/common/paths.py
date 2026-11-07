@@ -24,3 +24,7 @@ EXPERIMENTS_DIR = Path(os.getenv("EXPERIMENTS_DIR", str(ROOT / "experiments")))
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", str(DEFAULT_EMBED_BATCH_SIZE)))
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+RAGAS_LLM_MODEL = os.getenv("RAGAS_LLM_MODEL", "")

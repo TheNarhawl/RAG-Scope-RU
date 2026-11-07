@@ -131,3 +131,25 @@ def load_reranker_model(model_name: str, device: str | None = None) -> CrossEnco
         device=device,
         trust_remote_code=True,
     )
+
+
+def get_llm_client(
+    api_key: str | None = None,
+    base_url: str | None = None,
+):
+    """
+    Создает OpenAI-совместимый клиент для генерации ответов и работы RAGAS
+    (поддерживает OpenAI, DeepSeek, OpenRouter, vLLM, Ollama).
+    """
+    import os
+    from openai import OpenAI
+
+    key = api_key or os.getenv("OPENAI_API_KEY", "")
+    url = base_url or os.getenv("OPENAI_BASE_URL", "") or None
+
+    if not key:
+        key = "dummy-key"
+
+    if url:
+        return OpenAI(api_key=key, base_url=url)
+    return OpenAI(api_key=key)
