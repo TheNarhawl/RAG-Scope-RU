@@ -1,13 +1,43 @@
 # RAG-Scope-RU
 
-Модульная экспериментальная платформа (песочница) для исследования и оценки качества этапа поиска (Retrieval) в RAG-системах на русскоязычных нормативно-технических документах.
+<p align="left">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.12-blue.svg?logo=python&logoColor=white" alt="Python 3.12"></a>
+  <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-2.x%20CUDA-EE4C2C.svg?logo=pytorch&logoColor=white" alt="PyTorch"></a>
+  <a href="https://qdrant.tech/"><img src="https://img.shields.io/badge/Vector_DB-Qdrant-DC2626.svg?logo=qdrant&logoColor=white" alt="Qdrant"></a>
+  <a href="https://huggingface.co/"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Hugging_Face-FFD21E.svg" alt="Hugging Face"></a>
+  <a href="https://docs.ragas.io/"><img src="https://img.shields.io/badge/Eval-Ragas_LLM--as--a--Judge-8B5CF6.svg" alt="Ragas"></a>
+  <a href="https://github.com/TheNarhawl/RAG-Scope-RU/actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF.svg?logo=githubactions&logoColor=white" alt="GitHub Actions"></a>
+  <a href="docker/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white" alt="Docker"></a>
+</p>
+
+Модульная экспериментальная платформа (песочница) для исследования и оценки качества этапа поиска (Retrieval) и сквозной генерации в RAG-системах на русскоязычных нормативно-технических документах.
 
 Платформа позволяет изолированно менять и замерять влияние ключевых параметров пайплайна:
-* Модели эмбеддингов (от легковесных до SOTA мультиязычных и адаптированных под русский язык)
-* Стратегии поиска: плотный (Dense), разреженный лексический (BM25) и гибридный с Reciprocal Rank Fusion (RRF / FusionQuery)
-* Переранжирование кандидатов (Cross-Encoder Reranker)
-* Параметры нарезки текста (размер чанка и перекрытие, включая структурный чанкинг)
-* Метрики качества извлечения (Hit Rate@K, MRR) и задержка ответа (ms/query)
+* **Модели эмбеддингов**: от легковесных до SOTA мультиязычных и адаптированных под русский язык
+* **Стратегии поиска**: плотный (Dense), разреженный лексический (BM25) и гибридный с Reciprocal Rank Fusion (RRF / FusionQuery)
+* **Переранжирование кандидатов**: Cross-Encoder Reranker (`bge-reranker-v2-m3`, `bge-reranker-base`)
+* **Парсинг документов**: A/B сравнение стандартного PyPDF и Markdown-структурированного PyMuPDF4LLM
+* **Параметры нарезки текста**: размер чанка и перекрытие, включая структурный чанкинг по заголовкам и таблицам
+* **Метрики качества извлечения**: Hit Rate@K, MRR и задержка ответа (ms/query)
+* **Сквозная оценка качества ответов**: Триада метрик RAGAS (Faithfulness, Answer Correctness, Context Recall) с LLM-as-a-Judge
+
+---
+
+## 🛠 Технологический стек
+
+| Область | Технологии / Инструменты | Назначение в проекте |
+| :--- | :--- | :--- |
+| **Векторная база данных** | **[Qdrant](https://qdrant.tech/)** `1.12+` (Docker / Local / Remote) | Индексация dense и sparse векторов, гибридный поиск через Prefetch + RRF (`FusionQuery`), изоляция коллекций |
+| **Нейросетевые эмбеддинги** | **[Sentence-Transformers](https://sbert.net/)**, **[PyTorch](https://pytorch.org/)** (CUDA 12) | Инференс плотных векторных представлений текста (до 1024 dim) с автовыбором GPU/CPU |
+| **Модели представления (Dense)** | `deepvk/USER-bge-m3`, `BAAI/bge-m3`, `intfloat/multilingual-e5-*`, `Alibaba-NLP/gte-multilingual-base`, `cointegrated/rubert-tiny2` | Сравнительный анализ точности семантического поиска на русском нормативном корпусе |
+| **Лексический / Разреженный поиск** | **[FastEmbed](https://github.com/qdrant/fastembed)**, `rank-bm25` | Генерация sparse-индексов BM25 / SPLADE с модификатором IDF в Qdrant |
+| **Переранжирование (Rerank)** | **Cross-Encoder** (`BAAI/bge-reranker-v2-m3`, `bge-reranker-base`) | Вторичный точный скоринг топ-кандидатов с оценкой семантической близости пары «запрос-пассаж» |
+| **Парсинг и извлечение данных** | **[PyMuPDF4LLM](https://github.com/pymupdf/PyMuPDF)** (fitz), **[PyPDF](https://pypdf.readthedocs.io/)** | Извлечение текста нормативных PDF с сохранением Markdown-заголовков, списков и таблиц |
+| **Чанкинг и токенизация** | Собственные сплиттеры: `structural_chunk_text` и `naive_chunk_text` | Разделение по границам предложений и Markdown-блоков (`#`, `##`, `|`) с контекстным перекрытием (overlap) |
+| **Генерация и LLM-Judge (RAGAS)** | **[Ragas](https://docs.ragas.io/)**, **[OpenAI API](https://platform.openai.com/)** (совместимость с DeepSeek, Ollama, vLLM) | Двухэтапная валидация: скрининг поиска + генерация RAG-ответов и расчет триады метрик |
+| **Метрики и бенчмаркинг** | **[RRNCB Benchmark](https://huggingface.co/datasets/FractalGPT/RRNCBPublic)**, `Hit@K`, `MRR@K`, `ms/query` | 200 контрольных экспертных вопросов по ГОСТам, СНиПам и законодательству РФ |
+| **Инфраструктура и MLOps** | **Docker**, **Docker Compose**, **GitHub Actions**, **Google Colab** | Контейнеризация сервисов, автоматический CI/CD (flake8, матричные проверки, pytest), стенды на GPU Tesla T4 |
+| **Аналитика и визуализация** | **Pandas**, **Matplotlib**, **Graphify** | Построение сводных Markdown-отчетов, Парето-фронтов («Качество vs Задержка») и графа связности кода |
 
 ---
 
@@ -99,20 +129,15 @@ python src/pipelines/run_ab_experiment.py --group ab_parsing --with-ragas --raga
 
 ---
 
-## Стек технологий
+## 🏗 Архитектурные особенности и надежность
 
-**Реализовано:**
-- **Векторное хранилище:** Qdrant (Docker / Cloud / Local)
-- **Dense Embeddings:** `sentence-transformers` (поддержка мультиязычных SOTA `BAAI/bge-m3`, `Alibaba-NLP/gte-multilingual-base`, `intfloat/multilingual-e5-*`, а также русифицированных `deepvk/USER-bge-m3`, `ai-forever/ru-en-RoSBERTa`, `cointegrated/rubert-tiny2` и др.)
-- **Sparse Embeddings (BM25):** `fastembed` с поддержкой русской морфологии
-- **Гибридный поиск:** Qdrant Prefetch + RRF (`FusionQuery`) с защитой от пустых разреженных векторов
-- **Reranker:** Cross-Encoder (`BAAI/bge-reranker-v2-m3`, `BAAI/bge-reranker-base`)
-- **Парсинг и чанкинг:** `pypdf` и `pymupdf4llm` (извлечение Markdown заголовков и таблиц), структурный и наивный сплиттеры с настраиваемым overlap
-- **Генеративный контур и оценка RAGAS:**
-  - Генерация контекстно-зависимых ответов (`src/core/generator.py`) через OpenAI-совместимый API (DeepSeek, OpenRouter, vLLM, Ollama)
-  - Триада метрик RAGAS (`src/core/ragas_eval.py`): **Faithfulness**, **Answer Correctness**, **Context Recall**
-  - Двухэтапная стратегия валидации (Stage 1: быстрый скрининг 160 конфигураций; Stage 2: точечный замер лидеров Парето-фронта)
-- **Инфраструктура:** Фиксация сидов для воспроизводимости, автоматический обход багов `transformers >= 5.0` (восстановление неперсистентных буферов RoPE и `position_ids`), скрипты обслуживания Qdrant через PowerShell
+* **Двухэтапная валидация (Two-Stage Evaluation):**
+  * **Stage 1 (Retrieval Screening):** быстрый замер качества поиска (Hit@1..10, MRR, latency) по всей матрице конфигураций без затрат на инференс больших LLM.
+  * **Stage 2 (Generation & RAGAS):** точечная оценка контекстной генерации (Faithfulness, Answer Correctness, Context Recall) только для конфигураций Парето-фронта.
+* **Гибридный поиск с защитой от нулевых векторов:** совмещение Dense-поиска и разреженного BM25/SPLADE через `FusionQuery` (RRF) в Qdrant с fallback-логикой при редких или отсутствующих токенах.
+* **Борьба с утечками ресурсов:** автоматическая очистка промежуточных коллекций в памяти Qdrant и сброс CUDA кэша (`torch.cuda.empty_cache()`) между экспериментами.
+* **Совместимость с Transformers 5+:** встроенное динамическое восстановление неперсистентных буферов RoPE и `position_ids` (патч для `gte-multilingual-base` и кастомных архитектур).
+* **Абсолютная воспроизводимость:** сквозная фиксация сидов (`seed=42`) в PyTorch, NumPy и системном рандомайзере.
 
 ---
 
