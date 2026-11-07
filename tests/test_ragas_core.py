@@ -107,10 +107,13 @@ def test_evaluate_ragas_mocked():
         to_dict=lambda orient: [{"faithfulness": 0.95}]
     )
 
+    from ragas.llms.base import InstructorBaseRagasLLM
+    mock_llm = MagicMock(spec=InstructorBaseRagasLLM)
+
     with patch("ragas.evaluate", return_value=mock_eval_result), patch(
         "ragas.llms.llm_factory"
     ) as mock_llm_factory:
-        mock_llm_factory.return_value = MagicMock()
+        mock_llm_factory.return_value = mock_llm
         res = evaluate_ragas(samples, client=mock_client)
 
         assert "summary" in res

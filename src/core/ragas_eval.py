@@ -79,12 +79,21 @@ def evaluate_ragas(
         import numpy as np
         from ragas import evaluate
         from ragas.llms import llm_factory
-        from ragas.metrics import (
-            answer_correctness,
-            context_recall,
-            faithfulness,
-        )
-        from ragas.metrics._answer_correctness import AnswerCorrectness
+        try:
+            from ragas.metrics.collections import (
+                AnswerCorrectness,
+                ContextRecall,
+                Faithfulness,
+            )
+            use_collections = True
+        except ImportError:
+            from ragas.metrics import (
+                answer_correctness,
+                context_recall,
+                faithfulness,
+            )
+            from ragas.metrics._answer_correctness import AnswerCorrectness
+            use_collections = False
     except ImportError as e:
         logger.error(f"Не удалось импортировать RAGAS: {e}")
         return {"error": f"RAGAS import failed: {e}", "summary": {}}
@@ -95,12 +104,19 @@ def evaluate_ragas(
     ragas_llm = llm_factory(model=model, client=client)
 
     if metrics is None:
-        if embeddings is None:
-            ac_metric = AnswerCorrectness(weights=[1.0, 0.0])
+        if use_collections:
+            ac_weights = [1.0, 0.0] if embeddings is None else [0.75, 0.25]
+            metrics = [
+                Faithfulness(llm=ragas_llm),
+                AnswerCorrectness(llm=ragas_llm, weights=ac_weights),
+                ContextRecall(llm=ragas_llm),
+            ]
         else:
-            ac_metric = answer_correctness
-
-        metrics = [faithfulness, ac_metric, context_recall]
+            if embeddings is None:
+                ac_metric = AnswerCorrectness(weights=[1.0, 0.0])
+            else:
+                ac_metric = answer_correctness
+            metrics = [faithfulness, ac_metric, context_recall]
 
     hf_dataset = prepare_ragas_dataset(samples)
 
