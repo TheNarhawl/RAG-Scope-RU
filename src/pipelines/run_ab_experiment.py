@@ -119,6 +119,13 @@ def print_comparison_table(results_by_pair: dict):
 def main():
     parser = argparse.ArgumentParser(description="Запуск A/B тестирования (например, парсеров PDF)")
     parser.add_argument("--group", type=str, default="ab_parsing", help="Имя папки с A/B конфигами")
+    parser.add_argument(
+        "--pair", "--filter",
+        dest="pair",
+        type=str,
+        default=None,
+        help="Фильтр по имени пары/модели (например: large_e5, small_rubert, large_bge)",
+    )
     parser.add_argument("--with-ragas", action="store_true", help="Запустить генерацию и расчет RAGAS")
     parser.add_argument("--ragas-limit", type=int, default=None, help="Лимит вопросов для RAGAS")
     parser.add_argument("--llm-model", type=str, default=None, help="Модель для RAGAS")
@@ -132,6 +139,12 @@ def main():
         return
 
     yaml_files = sorted(group_dir.glob("*.yaml"))
+    if args.pair:
+        yaml_files = [y for y in yaml_files if args.pair.lower() in y.stem.lower()]
+        if not yaml_files:
+            print(f"По фильтру '{args.pair}' конфигов не найдено в {group_dir}.")
+            return
+
     if not yaml_files:
         print(f"В папке {group_dir} нет .yaml файлов.")
         return
