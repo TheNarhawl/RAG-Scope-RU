@@ -37,7 +37,10 @@ def main():
     parser = argparse.ArgumentParser(description="Пакетный запуск сетки экспериментов")
     parser.add_argument("--filter", type=str, default="", help="Подстрока для фильтрации папок (например, labse_ru)")
     parser.add_argument("--force", action="store_true", help="Пересчитать заново, даже если JSON уже есть")
-    parser.add_argument("--keep-collections", action="store_true", help="Не удалять коллекцию из Qdrant после оценки группы")
+    parser.add_argument(
+        "--keep-collections", action="store_true",
+        help="Не удалять коллекцию из Qdrant после оценки группы"
+    )
     args = parser.parse_args()
 
     chunk_dirs = sorted(p.parent for p in CONFIGS_DIR.rglob("dense.yaml") if p.parent != CONFIGS_DIR)

@@ -1,0 +1,12 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E402, E203, W503
+exclude =
+    .venv,
+    .git,
+    __pycache__,
+    graphify-out,
+    notebooks,
+    data,
+    experiments
+

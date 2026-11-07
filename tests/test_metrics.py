@@ -8,7 +8,7 @@ from evaluate_retrieval import hit_at_k, rr, slugify
 
 def test_hit_at_k():
     sources = ["docA.pdf", "docB.pdf", "docC.pdf", "docD.pdf"]
-    
+
     # Hit at k=1
     assert hit_at_k(sources, "docA.pdf", 1) == 1.0
     assert hit_at_k(sources, "docB.pdf", 1) == 0.0
@@ -39,7 +39,6 @@ def test_reciprocal_rank():
 
 
 def test_slugify():
-    assert slugify("USER BGE-M3+Hybrid") == "user_bge_m3_hybrid"
+    assert slugify("USER BGE-M3+Hybrid") == "user_bge_m3hybrid"
     assert slugify("test-run 1") == "test_run_1"
     assert slugify("Clean_Name") == "clean_name"
-

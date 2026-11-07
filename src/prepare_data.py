@@ -2,7 +2,6 @@ import argparse
 import csv
 import json
 import shutil
-import sys
 import zipfile
 from pathlib import Path
 

@@ -8,19 +8,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import torch
-import yaml
-from fastembed import SparseTextEmbedding
-from qdrant_client import models
-
-from paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
-from utils import (
-    get_qdrant_client,
-    load_dense_model,
-    load_reranker_model,
-    pick_device,
-    set_seed,
-)
+try:
+    import torch
+    import yaml
+    from fastembed import SparseTextEmbedding
+    from qdrant_client import models
+    from paths import CONFIGS_DIR, EVAL_DIR, EXPERIMENTS_DIR, QDRANT_URL
+    from utils import (
+        get_qdrant_client,
+        load_dense_model,
+        load_reranker_model,
+        pick_device,
+        set_seed,
+    )
+except ImportError:
+    torch = None
+    yaml = None
+    SparseTextEmbedding = None
+    models = None
 
 KS = [1, 3, 5, 10]
 DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
@@ -72,12 +77,21 @@ def main():
         questions = questions[: args.limit]
 
     device = pick_device(verbose=False)
-    
+
     # загружаем только те модели, которые нужны для текущего конфига
-    dense_model = load_dense_model(ing["embedding_model"], device=device) if (use_hybrid or vector_name == "dense") else None
-    sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25", language="russian") if (use_hybrid or vector_name == "sparse") else None
-    reranker = load_reranker_model(reranker_model_name, device=device) if use_rerank else None
-    
+    dense_model = (
+        load_dense_model(ing["embedding_model"], device=device)
+        if (use_hybrid or vector_name == "dense") else None
+    )
+    sparse_model = (
+        SparseTextEmbedding(model_name="Qdrant/bm25", language="russian")
+        if (use_hybrid or vector_name == "sparse") else None
+    )
+    reranker = (
+        load_reranker_model(reranker_model_name, device=device)
+        if use_rerank else None
+    )
+
     client = get_qdrant_client(QDRANT_URL)
 
     is_e5 = "e5" in ing["embedding_model"].lower()
@@ -86,13 +100,14 @@ def main():
     info = client.get_collection(ing["collection"])
     print(f"Конфиг: {args.config} (seed={seed}, device={device})")
     print(f"Коллекция: {ing['collection']} ({info.points_count} точек)")
-    print(f"Стратегия: {vector_name} | Hybrid: {use_hybrid} | Rerank: {use_rerank} ({reranker_model_name if use_rerank else '—'})")
+    rerank_display = reranker_model_name if use_rerank else '—'
+    print(f"Стратегия: {vector_name} | Hybrid: {use_hybrid} | Rerank: {use_rerank} ({rerank_display})")
     print(f"Вопросов: {len(questions)}\n")
 
     hits = {k: 0.0 for k in KS}
     mrr_sum = 0.0
     per_q = []
-    
+
     total_encode_ms = 0.0
     total_search_ms = 0.0
     total_rerank_ms = 0.0
@@ -101,19 +116,19 @@ def main():
 
     for q in questions:
         qt = q["question"]
-        
+
         # 1. Замер времени векторизации текста (Encode Latency)
         t0_encode = time.time()
         q_dense = None
         q_sparse = None
-        
+
         if dense_model:
             q_dense_text = query_prefix + qt if query_prefix else qt
             q_dense = dense_model.encode([q_dense_text], normalize_embeddings=True)[0].tolist()
-            
+
         if sparse_model:
             q_sparse = list(sparse_model.embed([qt]))[0]
-            
+
         total_encode_ms += (time.time() - t0_encode) * 1000
 
         # 2. Замер сетевой задержки и поиска в Qdrant (Search Latency)
@@ -165,7 +180,7 @@ def main():
                 )
             else:
                 res = models.ScoredPoint(points=[])
-        else: 
+        else:
             # Классический Dense поиск
             res = client.query_points(
                 collection_name=ing["collection"],
@@ -199,12 +214,12 @@ def main():
 
     elapsed_global = time.time() - t0_global
     n = len(questions)
-    
+
     avg_encode_ms = total_encode_ms / n
     avg_search_ms = total_search_ms / n
     avg_rerank_ms = total_rerank_ms / n if use_rerank else 0.0
     avg_total_ms = avg_encode_ms + avg_search_ms + avg_rerank_ms
-    
+
     summary = {
         "n_questions": n,
         "hit_rate": {f"@{k}": hits[k] / n for k in KS},
@@ -234,7 +249,7 @@ def main():
     out_dir = EXPERIMENTS_DIR / ing["collection"]
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"metrics_{tag}_{ts}.json"
-    
+
     out_path.write_text(
         json.dumps(
             {
@@ -251,12 +266,16 @@ def main():
     )
     print(f"Сохранено: {out_path}")
 
-    if dense_model: del dense_model
-    if sparse_model: del sparse_model
-    if reranker: del reranker
+    if dense_model:
+        del dense_model
+    if sparse_model:
+        del sparse_model
+    if reranker:
+        del reranker
     gc.collect()
-    if torch.cuda.is_available():
+    if torch and torch.cuda.is_available():
         torch.cuda.empty_cache()
+
 
 if __name__ == "__main__":
     main()

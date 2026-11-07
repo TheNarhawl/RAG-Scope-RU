@@ -154,7 +154,7 @@ def build_markdown(runs: list[dict]) -> str:
     valid = [r for r in runs_sorted if r["mrr"] is not None]
     if valid:
         best = max(valid, key=lambda r: r["mrr"])
-        lines.append(f"\n## Best run (по MRR)\n")
+        lines.append("\n## Best run (по MRR)\n")
         lines.append(f"- **Tag:** `{best['tag']}`")
         lines.append(f"- **Embedding:** `{best['embedding']}`")
         lines.append(f"- **Chunk:** {best['chunk_size']} / overlap {best['overlap']}")

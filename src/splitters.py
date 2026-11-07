@@ -1,13 +1,10 @@
-from typing import List
-
-
-def naive_chunk_text(text: str, size: int, overlap: int) -> List[str]:
+def naive_chunk_text(text: str, size: int, overlap: int) -> list[str]:
     """
     Наивный посимвольный чанкинг (Baseline).
     """
     chunks, start = [], 0
     while start < len(text):
-        c = text[start : start + size].strip()
+        c = text[start:start + size].strip()
         if c:
             chunks.append(c)
         start += size - overlap
@@ -18,8 +15,8 @@ def structural_chunk_text(
     text: str,
     chunk_size: int = 512,
     chunk_overlap: int = 64,
-    separators: List[str] | None = None,
-) -> List[str]:
+    separators: list[str] | None = None,
+) -> list[str]:
     if separators is None:
         separators = [
             "\nРаздел ",
