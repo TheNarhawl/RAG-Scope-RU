@@ -119,13 +119,14 @@ python src/pipelines/run_ab_experiment.py --group ab_parsing
 python src/pipelines/run_ab_experiment.py --group ab_parsing --with-ragas --ragas-limit 20
 ```
 
-### 6. Запуск в Google Colab
+### 6. Анализ A/B эксперимента (PyPDF vs PyMuPDF4LLM)
 
-Для воспроизведения экспериментов на GPU Tesla T4 подготовлен интерактивный блокнот [`notebooks/colab_runner.ipynb`](notebooks/colab_runner.ipynb):
-* Автономный старт сервера Qdrant без Docker
-* Подключение Google Drive для персистентного сохранения результатов (`/content/drive/MyDrive/RAG_Scope_Experiments`)
-* Распаковка корпуса `docs.zip` с Google Drive
-* Автоматический расчет дельты качества и интерактивные графики (`matplotlib`, `pandas`)
+Для детального статистического анализа результатов парсинга подготовлен аналитический блокнот [`notebooks/ab_pypdf_vs_pymupdf.ipynb`](notebooks/ab_pypdf_vs_pymupdf.ipynb):
+* Загрузка и сопоставление 8 экспериментов (4 пары моделей по 200 контрольных вопросов)
+* Сводные карточки метрик с расчетом абсолютной дельты ($\Delta$) и относительного прироста (Lift %)
+* Непараметрические статистические критерии: парный тест Уилкоксона для $RR$ и точный тест Мак-Немара для $Hit@1$, $Hit@5$
+* Построение 95% бутстрап доверительных интервалов и Forest Plot
+* Анализ структуры побед и поражений (Win / Tie / Loss) и качественный разбор выигранных/проигранных вопросов
 
 ---
 
